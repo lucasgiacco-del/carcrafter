@@ -23,15 +23,20 @@ type SelectedModState = {
   optionId: string | null
 }
 
+// Years for dropdown (1990–2025)
+const YEAR_OPTIONS = Array.from({ length: 36 }, (_, i) => 2025 - i)
+
 const MODS: Mod[] = [
   {
     id: 'tint',
     label: 'Window Tint',
     description: 'Darken your side and rear windows.',
     options: [
+      { id: '5', label: '5% (limo)' },
       { id: '20', label: '20% (dark)' },
       { id: '35', label: '35% (medium)' },
       { id: '50', label: '50% (light)' },
+      { id: '75', label: '75% (very light)' },
     ],
   },
   {
@@ -72,9 +77,11 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
   const tint = mods.tint
   if (tint.enabled && tint.optionId) {
     let level = ''
-    if (tint.optionId === '20') level = 'very dark 20%'
+    if (tint.optionId === '5') level = 'extremely dark 5%'
+    else if (tint.optionId === '20') level = 'very dark 20%'
     else if (tint.optionId === '35') level = 'medium 35%'
     else if (tint.optionId === '50') level = 'lighter 50%'
+    else if (tint.optionId === '75') level = 'very light 75%'
 
     parts.push(
       `Apply ${level} window tint ONLY to the car's glass windows (side windows and rear windshield). ` +
@@ -478,7 +485,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center px-4 py-10">
-      <div className="w-full max-w-4xl space-y-8">
+      <div className="w-full max-w-5xl space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 text-center">
           <img src="/carcrafter.png" alt="Car Crafter" className="h-20 md:h-24 mb-1" />
@@ -500,166 +507,188 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Car selection */}
-        <div className="grid gap-4 md:grid-cols-3 text-sm">
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-300 font-semibold">Make</label>
-            <select
-              className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2"
-              value={carMake}
-              onChange={(e) => {
-                setCarMake(e.target.value)
-                setCarModel('')
-              }}
-            >
-              <option value="">Select make</option>
-              {carOptions.map((opt) => (
-                <option key={opt.make} value={opt.make}>
-                  {opt.make}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Car selection card */}
+        <section className="bg-[#101010] border border-gray-800 rounded-2xl p-4 md:p-5 shadow-lg shadow-black/40">
+          <h2 className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">
+            0. Car Info (optional)
+          </h2>
+          <div className="grid gap-4 md:grid-cols-3 text-sm">
+            <div className="flex flex-col gap-1">
+              <label className="text-gray-300 font-medium text-xs">Make</label>
+              <select
+                className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
+                value={carMake}
+                onChange={(e) => {
+                  setCarMake(e.target.value)
+                  setCarModel('')
+                }}
+              >
+                <option value="">Select make</option>
+                {carOptions.map((opt) => (
+                  <option key={opt.make} value={opt.make}>
+                    {opt.make}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-300 font-semibold">Model</label>
-            <select
-              className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2"
-              value={carModel}
-              onChange={(e) => setCarModel(e.target.value)}
-              disabled={!carMake}
-            >
-              <option value="">Select model</option>
-              {carMake &&
-                carOptions
-                  .find((m) => m.make === carMake)
-                  ?.models.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-            </select>
-          </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-gray-300 font-medium text-xs">Model</label>
+              <select
+                className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 disabled:opacity-40"
+                value={carModel}
+                onChange={(e) => setCarModel(e.target.value)}
+                disabled={!carMake}
+              >
+                <option value="">Select model</option>
+                {carMake &&
+                  carOptions
+                    .find((m) => m.make === carMake)
+                    ?.models.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+              </select>
+            </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-300 font-semibold">Year</label>
-            <input
-              type="text"
-              className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2"
-              value={carYear}
-              onChange={(e) => setCarYear(e.target.value)}
-              placeholder="2022"
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-gray-300 font-medium text-xs">Year</label>
+              <select
+                className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
+                value={carYear}
+                onChange={(e) => setCarYear(e.target.value)}
+              >
+                <option value="">Select year</option>
+                {YEAR_OPTIONS.map((y) => (
+                  <option key={y} value={y.toString()}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Upload + Prompt */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-gray-300">1. Upload your car (optional)</h2>
-            <label className="block border border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-purple-500 transition">
+        {/* Steps 1–3 grid */}
+        <section className="grid gap-4 md:grid-cols-3">
+          {/* Step 1: Upload */}
+          <div className="bg-[#101010] border border-gray-800 rounded-2xl p-4 flex flex-col">
+            <h2 className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">
+              1. Upload your car (optional)
+            </h2>
+            <label className="flex-1 border border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-purple-500 transition">
               <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
               <div className="text-gray-300 text-sm">Click to upload or drag and drop</div>
               <div className="text-xs text-gray-500 mt-1">JPG / PNG recommended</div>
             </label>
             {inputImage && (
-              <img src={inputImage} className="rounded-lg max-h-64 w-full object-cover mt-2" />
+              <img
+                src={inputImage}
+                className="rounded-lg max-h-40 w-full object-cover mt-3 border border-gray-700"
+              />
             )}
           </div>
 
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-gray-300">2. Describe your mods</h2>
+          {/* Step 2: Describe */}
+          <div className="bg-[#101010] border border-gray-800 rounded-2xl p-4 flex flex-col">
+            <h2 className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">
+              2. Describe your mods
+            </h2>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full h-32 bg-[#151515] border border-gray-700 rounded-xl p-3 text-sm"
+              className="flex-1 w-full bg-[#151515] border border-gray-700 rounded-xl p-3 text-sm resize-none outline-none focus:border-purple-500"
               placeholder="Example: Lowered stance, matte black wheels, carbon fiber lip, light tint."
             />
-
-            {/* Mod selector UI */}
-            <div className="mt-2">
-              <h3 className="text-xs font-semibold text-gray-300 mb-1">
-                (Optional) Quick Mod Selector
-              </h3>
-
-              {activeModId === null ? (
-                <div className="space-y-2">
-                  {MODS.map((mod) => {
-                    const selected = selectedMods[mod.id]
-                    const isEnabled = selected?.enabled
-                    const currentOption = mod.options.find(
-                      (o) => o.id === selected?.optionId,
-                    )
-
-                    return (
-                      <button
-                        key={mod.id}
-                        type="button"
-                        onClick={() => setActiveModId(mod.id)}
-                        className="w-full flex flex-col items-start border border-gray-700 rounded-xl p-2 hover:bg-gray-900 transition text-left"
-                      >
-                        <div className="flex w-full justify-between items-center">
-                          <span className="text-sm font-medium">{mod.label}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-600">
-                            {isEnabled ? 'Selected ✅' : 'Not selected'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 mt-0.5">{mod.description}</p>
-                        {isEnabled && currentOption && (
-                          <p className="text-[11px] text-gray-300 mt-0.5">
-                            Option: {currentOption.label}
-                          </p>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : (
-                <ModDetailScreen
-                  key={activeModId}
-                  modId={activeModId}
-                  selected={selectedMods[activeModId]}
-                  onBack={() => setActiveModId(null)}
-                  onSave={(optionId) => {
-                    setSelectedMods((prev) => ({
-                      ...prev,
-                      [activeModId]: { enabled: true, optionId },
-                    }))
-                    setActiveModId(null)
-                  }}
-                  onRemove={() => {
-                    setSelectedMods((prev) => ({
-                      ...prev,
-                      [activeModId]: { enabled: false, optionId: null },
-                    }))
-                    setActiveModId(null)
-                  }}
-                />
-              )}
-            </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm font-semibold"
-            >
-              {loading ? 'Generating…' : '3. Generate Image'}
-            </button>
-
-            {loading && (
-              <p className="text-xs text-purple-300 mt-2 animate-pulse">
-                Generating your render… this can take a few seconds.
-              </p>
-            )}
-
-            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
           </div>
+
+          {/* Step 3: Quick Mod Selector */}
+          <div className="bg-[#101010] border border-gray-800 rounded-2xl p-4 flex flex-col">
+            <h2 className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">
+              3. Quick Mod Selector
+            </h2>
+
+            {activeModId === null ? (
+              <div className="space-y-2 overflow-y-auto max-h-64 pr-1">
+                {MODS.map((mod) => {
+                  const selected = selectedMods[mod.id]
+                  const isEnabled = selected?.enabled
+                  const currentOption = mod.options.find(
+                    (o) => o.id === selected?.optionId,
+                  )
+
+                  return (
+                    <button
+                      key={mod.id}
+                      type="button"
+                      onClick={() => setActiveModId(mod.id)}
+                      className="w-full flex flex-col items-start border border-gray-700 rounded-xl px-3 py-2 hover:bg-gray-900 transition text-left"
+                    >
+                      <div className="flex w-full justify-between items-center">
+                        <span className="text-sm font-medium">{mod.label}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-600">
+                          {isEnabled ? 'Selected ✅' : 'Not selected'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{mod.description}</p>
+                      {isEnabled && currentOption && (
+                        <p className="text-[11px] text-gray-300 mt-0.5">
+                          Option: {currentOption.label}
+                        </p>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <ModDetailScreen
+                key={activeModId}
+                modId={activeModId}
+                selected={selectedMods[activeModId]}
+                onBack={() => setActiveModId(null)}
+                onSave={(optionId) => {
+                  setSelectedMods((prev) => ({
+                    ...prev,
+                    [activeModId]: { enabled: true, optionId },
+                  }))
+                  setActiveModId(null)
+                }}
+                onRemove={() => {
+                  setSelectedMods((prev) => ({
+                    ...prev,
+                    [activeModId]: { enabled: false, optionId: null },
+                  }))
+                  setActiveModId(null)
+                }}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Generate button */}
+        <div className="mt-2">
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm font-semibold"
+          >
+            {loading ? 'Generating…' : 'Generate Image'}
+          </button>
+
+          {loading && (
+            <p className="text-xs text-purple-300 mt-2 animate-pulse">
+              Generating your render… this can take a few seconds.
+            </p>
+          )}
+
+          {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
         </div>
 
         {/* Result */}
-        <div className="mt-6">
+        <div className="mt-4">
           <h2 className="text-sm font-semibold text-gray-300 mb-3">Result</h2>
-          <div className="border border-gray-700 rounded-xl p-4 flex items-center justify-center min-h-[200px] bg-[#151515]">
+          <div className="border border-gray-700 rounded-xl p-4 flex items-center justify-center min-h-[220px] bg-[#151515]">
             {imageUrl ? (
               <img src={imageUrl} className="rounded-lg max-h-[480px] object-contain w-full" />
             ) : loading ? (
@@ -674,7 +703,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Part Finder Section — now UNDER the result */}
+        {/* Part Finder Section */}
         <div className="mt-4 border border-gray-700 rounded-xl p-4 bg-[#111]">
           <h3 className="text-sm font-semibold text-gray-200">Part Finder &amp; Pricing (Coming Soon)</h3>
 
@@ -727,11 +756,11 @@ function ModDetailScreen({
   )
 
   return (
-    <div className="mt-2 space-y-3 border border-gray-700 rounded-xl p-3">
+    <div className="mt-1 space-y-3 border border-gray-700 rounded-xl p-3">
       <button
         type="button"
         onClick={onBack}
-        className="text-[11px] text-gray-400 hover:text-gray-200"
+        className="text-[11px] text-gray-400 hover:text-gray-200 mb-1"
       >
         ← Back to mods
       </button>
@@ -749,7 +778,7 @@ function ModDetailScreen({
             onClick={() => setLocalOptionId(opt.id)}
             className={`w-full text-left border rounded-lg px-3 py-2 text-xs ${
               localOptionId === opt.id
-                ? 'border-white bg-gray-800'
+                ? 'border-purple-400 bg-gray-800'
                 : 'border-gray-700 hover:bg-gray-900'
             }`}
           >
