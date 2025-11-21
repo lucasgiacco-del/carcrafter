@@ -79,7 +79,7 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
     parts.push(
       `Apply ${level} window tint ONLY to the car's glass windows (side windows and rear windshield). ` +
         `Do NOT modify or recolor the wheels, tires, brake calipers, chrome trim or badges, paint color, body panels, headlights, taillights, mirrors, or background. ` +
-        `The ONLY allowed change is darkening the transparency of the window glass.`
+        `The ONLY allowed change is darkening the transparency of the window glass.`,
     )
   }
 
@@ -92,7 +92,7 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
     else if (wheels.optionId === 'gunmetal') desc = 'gunmetal wheels'
 
     parts.push(
-      `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`
+      `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`,
     )
   }
 
@@ -104,7 +104,7 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
     else if (spoiler.optionId === 'ducktail') desc = 'a more aggressive ducktail trunk spoiler'
 
     parts.push(
-      `Add ${desc} to the rear of the car. Do NOT modify any other body panels, color, trim, or wheels.`
+      `Add ${desc} to the rear of the car. Do NOT modify any other body panels, color, trim, or wheels.`,
     )
   }
 
@@ -117,7 +117,7 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
     else if (cd.optionId === 'matte') finish = 'matte black'
 
     parts.push(
-      `Change ONLY the chrome window trim and exterior chrome accents to ${finish}. Do NOT modify the paint, wheels, glass, or background.`
+      `Change ONLY the chrome window trim and exterior chrome accents to ${finish}. Do NOT modify the paint, wheels, glass, or background.`,
     )
   }
 
@@ -125,7 +125,7 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
   return parts.join(' ')
 }
 
-/* ---------- Existing types & config ---------- */
+/* ---------- Library + car selector config ---------- */
 
 type LibraryItem = {
   id: string
@@ -135,13 +135,214 @@ type LibraryItem = {
   createdAt: string
 }
 
-const carOptions = [
-  { make: 'Audi', models: ['A4', 'S4', 'A3', 'Q5'] },
-  { make: 'Mazda', models: ['CX-5', 'Mazda3', 'Mazda6', 'CX-30'] },
-  { make: 'Jeep', models: ['Wrangler', 'Grand Cherokee', 'Gladiator', 'Renegade'] },
-  { make: 'BMW', models: ['3 Series', 'M3', 'X3', 'X5'] },
-  { make: 'Honda', models: ['Civic', 'Accord', 'CR-V'] },
-  { make: 'Toyota', models: ['Camry', 'Corolla', 'RAV4'] },
+type CarOption = {
+  make: string
+  models: string[]
+}
+
+const carOptions: CarOption[] = [
+  {
+    make: 'Audi',
+    models: [
+      'A3', 'S3', 'RS3',
+      'A4', 'S4', 'RS4',
+      'A5', 'S5', 'RS5',
+      'A6', 'S6', 'RS6',
+      'A7', 'S7', 'RS7',
+      'Q3', 'Q5', 'Q7', 'Q8',
+      'TT', 'TTS', 'TT RS',
+    ],
+  },
+  {
+    make: 'BMW',
+    models: [
+      '2 Series', 'M2',
+      '3 Series', 'M3',
+      '4 Series', 'M4',
+      '5 Series', 'M5',
+      '7 Series',
+      'X1', 'X3', 'X3 M', 'X5', 'X5 M',
+      'Z4',
+    ],
+  },
+  {
+    make: 'Mercedes-Benz',
+    models: [
+      'A-Class', 'CLA', 'C-Class', 'C43', 'C63',
+      'E-Class', 'E53', 'E63',
+      'S-Class',
+      'GLA', 'GLC', 'GLE',
+      'AMG GT',
+    ],
+  },
+  {
+    make: 'Volkswagen',
+    models: [
+      'Golf', 'GTI', 'Golf R',
+      'Jetta', 'GLI',
+      'Passat',
+      'Tiguan', 'Atlas',
+    ],
+  },
+  {
+    make: 'Honda',
+    models: [
+      'Civic', 'Civic Si', 'Civic Type R',
+      'Accord',
+      'Integra',
+      'CR-V', 'HR-V',
+    ],
+  },
+  {
+    make: 'Toyota',
+    models: [
+      'Corolla', 'Corolla Hatchback',
+      'Camry', 'Camry TRD',
+      'GR86',
+      'Supra',
+      'RAV4', 'RAV4 Prime',
+      'Tacoma', 'Tundra',
+      '4Runner',
+    ],
+  },
+  {
+    make: 'Nissan',
+    models: [
+      'Altima',
+      'Maxima',
+      'Sentra SR',
+      '370Z', '400Z',
+      'GT-R',
+      'Rogue',
+    ],
+  },
+  {
+    make: 'Subaru',
+    models: [
+      'Impreza',
+      'WRX', 'WRX STI',
+      'BRZ',
+      'Forester',
+      'Outback',
+    ],
+  },
+  {
+    make: 'Hyundai',
+    models: [
+      'Elantra', 'Elantra N',
+      'Sonata', 'Sonata N Line',
+      'Veloster N',
+      'Kona', 'Kona N',
+      'Tucson',
+    ],
+  },
+  {
+    make: 'Kia',
+    models: [
+      'Forte GT',
+      'Stinger',
+      'K5 GT',
+      'Soul',
+      'Seltos',
+      'Sportage',
+    ],
+  },
+  {
+    make: 'Ford',
+    models: [
+      'Mustang', 'Mustang GT', 'Shelby GT350', 'Shelby GT500',
+      'Focus ST', 'Focus RS',
+      'Fiesta ST',
+      'F-150', 'F-150 Raptor',
+      'Bronco',
+    ],
+  },
+  {
+    make: 'Chevrolet',
+    models: [
+      'Camaro', 'Camaro SS', 'Camaro ZL1',
+      'Corvette Stingray', 'Corvette Z06',
+      'Malibu',
+      'Silverado',
+      'Trailblazer',
+    ],
+  },
+  {
+    make: 'Dodge',
+    models: [
+      'Charger', 'Charger Scat Pack', 'Charger Hellcat',
+      'Challenger', 'Challenger Scat Pack', 'Challenger Hellcat',
+      'Durango', 'Durango SRT',
+    ],
+  },
+  {
+    make: 'Jeep',
+    models: [
+      'Wrangler', 'Wrangler Rubicon',
+      'Gladiator',
+      'Grand Cherokee', 'Grand Cherokee SRT',
+      'Cherokee',
+    ],
+  },
+  {
+    make: 'Mazda',
+    models: [
+      'Mazda3',
+      'Mazda6',
+      'MX-5 Miata',
+      'CX-30',
+      'CX-5',
+      'CX-50',
+    ],
+  },
+  {
+    make: 'Lexus',
+    models: [
+      'IS 300', 'IS 350', 'IS 500',
+      'RC 350', 'RC F',
+      'GS 350',
+      'RX 350',
+      'NX 350',
+    ],
+  },
+  {
+    make: 'Infiniti',
+    models: [
+      'Q50', 'Q50 Red Sport',
+      'Q60',
+      'QX50',
+    ],
+  },
+  {
+    make: 'Acura',
+    models: [
+      'Integra',
+      'TLX', 'TLX Type S',
+      'ILX',
+      'RDX',
+      'MDX',
+    ],
+  },
+  {
+    make: 'Tesla',
+    models: [
+      'Model 3',
+      'Model Y',
+      'Model S',
+      'Model X',
+    ],
+  },
+  {
+    make: 'Porsche',
+    models: [
+      '911 Carrera', '911 Turbo', '911 GT3',
+      'Cayman', 'Cayman GT4',
+      'Boxster',
+      'Panamera',
+      'Macan',
+      'Cayenne',
+    ],
+  },
 ]
 
 /* ---------- Page component ---------- */
@@ -157,7 +358,7 @@ export default function Home() {
   const [carModel, setCarModel] = useState('')
   const [carYear, setCarYear] = useState('')
 
-  // NEW: mod selector state
+  // mod selector state
   const [activeModId, setActiveModId] = useState<ModId | null>(null)
   const [selectedMods, setSelectedMods] = useState<Record<ModId, SelectedModState>>({
     tint: { enabled: false, optionId: null },
@@ -204,38 +405,31 @@ export default function Home() {
   function saveToLibrary(resultUrl: string) {
     try {
       if (typeof window === 'undefined') return
-  
+
       const raw = window.localStorage.getItem('carcrafter_library')
       const prev: LibraryItem[] = raw ? JSON.parse(raw) : []
-  
+
       const item: LibraryItem = {
         id: crypto.randomUUID(),
         prompt,
-        originalImage: null, // 👈 don't keep the huge base64 image
+        originalImage: null,
         resultImage: resultUrl,
         createdAt: new Date().toISOString(),
       }
-  
-      // keep fewer items to be extra safe
+
       const next = [item, ...prev].slice(0, 10)
-  
       window.localStorage.setItem('carcrafter_library', JSON.stringify(next))
     } catch (err: any) {
-      // If quota exceeded, clear the library once
-      if (
-        typeof window !== 'undefined' &&
-        err?.name === 'QuotaExceededError'
-      ) {
+      if (typeof window !== 'undefined' && err?.name === 'QuotaExceededError') {
         console.warn('Storage full, clearing Car Crafter library')
         window.localStorage.removeItem('carcrafter_library')
       } else {
         console.error('Failed to save to library', err)
       }
     }
-  
   }
 
-  // 🔥 UPDATED TO USE selectedMods + buildModsPrompt
+  // generate handler
   async function handleGenerate() {
     const hasTextPrompt = Boolean(prompt.trim())
     const hasAnyModsSelected = Object.values(selectedMods).some((m) => m.enabled)
@@ -255,7 +449,6 @@ export default function Home() {
     else if (carMake) carDesc = `${carMake}. `
 
     const modsPrompt = buildModsPrompt(selectedMods)
-
     const combinedPrompt = `${carDesc}${prompt} ${modsPrompt}`.trim()
 
     try {
@@ -275,7 +468,7 @@ export default function Home() {
       setImageUrl(data.url)
       saveToLibrary(data.url)
     } catch (err) {
-      setError('Network error')
+      setError('Server error')
     } finally {
       setLoading(false)
     }
@@ -383,7 +576,7 @@ export default function Home() {
               placeholder="Example: Lowered stance, matte black wheels, carbon fiber lip, light tint."
             />
 
-            {/* NEW: Mod selector UI */}
+            {/* Mod selector UI */}
             <div className="mt-2">
               <h3 className="text-xs font-semibold text-gray-300 mb-1">
                 (Optional) Quick Mod Selector
@@ -395,7 +588,7 @@ export default function Home() {
                     const selected = selectedMods[mod.id]
                     const isEnabled = selected?.enabled
                     const currentOption = mod.options.find(
-                      (o) => o.id === selected?.optionId
+                      (o) => o.id === selected?.optionId,
                     )
 
                     return (
@@ -452,7 +645,14 @@ export default function Home() {
             >
               {loading ? 'Generating…' : '3. Generate Image'}
             </button>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+
+            {loading && (
+              <p className="text-xs text-purple-300 mt-2 animate-pulse">
+                Generating your render… this can take a few seconds.
+              </p>
+            )}
+
+            {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
           </div>
         </div>
 
@@ -462,12 +662,36 @@ export default function Home() {
           <div className="border border-gray-700 rounded-xl p-4 flex items-center justify-center min-h-[200px] bg-[#151515]">
             {imageUrl ? (
               <img src={imageUrl} className="rounded-lg max-h-[480px] object-contain w-full" />
+            ) : loading ? (
+              <span className="text-purple-300 text-sm animate-pulse">
+                Generating your image…
+              </span>
             ) : (
               <span className="text-gray-500 text-sm">
                 Your generated image will appear here.
               </span>
             )}
           </div>
+        </div>
+
+        {/* Part Finder Section — now UNDER the result */}
+        <div className="mt-4 border border-gray-700 rounded-xl p-4 bg-[#111]">
+          <h3 className="text-sm font-semibold text-gray-200">Part Finder &amp; Pricing (Coming Soon)</h3>
+
+          <p className="text-xs text-gray-400 mt-1">
+            This upcoming feature will analyze your car details and mods, then find:
+            <br />• Compatible aftermarket parts
+            <br />• Real-time pricing from shops
+            <br />• Best-rated brands
+            <br />• Install difficulty &amp; time
+          </p>
+
+          <button
+            disabled
+            className="mt-3 w-full py-2 rounded-lg bg-gray-700 text-gray-400 text-xs cursor-not-allowed"
+          >
+            Coming Soon
+          </button>
         </div>
 
         <div className="flex justify-end">
@@ -499,7 +723,7 @@ function ModDetailScreen({
 }: ModDetailProps) {
   const mod = MODS.find((m) => m.id === modId)!
   const [localOptionId, setLocalOptionId] = useState<string | null>(
-    selected.optionId ?? mod.options[0]?.id ?? null
+    selected.optionId ?? mod.options[0]?.id ?? null,
   )
 
   return (
@@ -541,7 +765,7 @@ function ModDetailScreen({
           disabled={!localOptionId}
           className="flex-1 bg-white text-black rounded-lg py-2 text-xs font-semibold disabled:opacity-40"
         >
-          Save & Back
+          Save &amp; Back
         </button>
         <button
           type="button"
