@@ -204,23 +204,35 @@ export default function Home() {
   function saveToLibrary(resultUrl: string) {
     try {
       if (typeof window === 'undefined') return
-
+  
       const raw = window.localStorage.getItem('carcrafter_library')
       const prev: LibraryItem[] = raw ? JSON.parse(raw) : []
-
+  
       const item: LibraryItem = {
         id: crypto.randomUUID(),
         prompt,
-        originalImage: inputImage,
+        originalImage: null, // 👈 don't keep the huge base64 image
         resultImage: resultUrl,
         createdAt: new Date().toISOString(),
       }
-
-      const next = [item, ...prev].slice(0, 20)
+  
+      // keep fewer items to be extra safe
+      const next = [item, ...prev].slice(0, 10)
+  
       window.localStorage.setItem('carcrafter_library', JSON.stringify(next))
-    } catch (err) {
-      console.error('Failed to save to library', err)
+    } catch (err: any) {
+      // If quota exceeded, clear the library once
+      if (
+        typeof window !== 'undefined' &&
+        err?.name === 'QuotaExceededError'
+      ) {
+        console.warn('Storage full, clearing Car Crafter library')
+        window.localStorage.removeItem('carcrafter_library')
+      } else {
+        console.error('Failed to save to library', err)
+      }
     }
+  
   }
 
   // 🔥 UPDATED TO USE selectedMods + buildModsPrompt
