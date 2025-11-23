@@ -26,6 +26,24 @@ type SelectedModState = {
 // Years for dropdown (1990–2025)
 const YEAR_OPTIONS = Array.from({ length: 36 }, (_, i) => 2025 - i)
 
+// Common OEM-ish colors (value === label so we can drop straight into the prompt)
+const CAR_COLOR_OPTIONS = [
+  { value: '', label: 'Select color' },
+  { value: 'White', label: 'White' },
+  { value: 'Black', label: 'Black' },
+  { value: 'Silver', label: 'Silver' },
+  { value: 'Gray', label: 'Gray' },
+  { value: 'Nardo Grey', label: 'Nardo Grey' },
+  { value: 'Red', label: 'Red' },
+  { value: 'Blue', label: 'Blue' },
+  { value: 'Dark Blue', label: 'Dark Blue' },
+  { value: 'Green', label: 'Green' },
+  { value: 'Dark Green', label: 'Dark Green' },
+  { value: 'Yellow', label: 'Yellow' },
+  { value: 'Orange', label: 'Orange' },
+  { value: 'Bronze', label: 'Bronze' },
+] as const
+
 const MODS: Mod[] = [
   {
     id: 'tint',
@@ -44,9 +62,11 @@ const MODS: Mod[] = [
     label: 'Wheels',
     description: 'Change the style/color of your wheels.',
     options: [
-      { id: 'gloss_black', label: 'Gloss black' },
-      { id: 'matte_black', label: 'Matte black' },
-      { id: 'gunmetal', label: 'Gunmetal' },
+      { id: 'black_gloss', label: 'Gloss Black (shiny, aggressive look)' },
+      { id: 'black_matte', label: 'Matte Black (stealth look)' },
+      { id: 'gunmetal', label: 'Gunmetal Grey (OEM+ clean finish)' },
+      { id: 'silver', label: 'Silver (factory style)' },
+      { id: 'chrome', label: 'Chrome (high-shine)' },
     ],
   },
   {
@@ -91,17 +111,19 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
   }
 
   // WHEELS
-  const wheels = mods.wheels
-  if (wheels.enabled && wheels.optionId) {
-    let desc = ''
-    if (wheels.optionId === 'gloss_black') desc = 'gloss black wheels'
-    else if (wheels.optionId === 'matte_black') desc = 'matte black wheels'
-    else if (wheels.optionId === 'gunmetal') desc = 'gunmetal wheels'
+const wheels = mods.wheels
+if (wheels.enabled && wheels.optionId) {
+  let desc = ''
+  if (wheels.optionId === 'black_gloss') desc = 'gloss black wheels'
+  else if (wheels.optionId === 'black_matte') desc = 'matte black wheels'
+  else if (wheels.optionId === 'gunmetal') desc = 'gunmetal grey wheels'
+  else if (wheels.optionId === 'silver') desc = 'silver wheels'
+  else if (wheels.optionId === 'chrome') desc = 'chrome wheels'
 
-    parts.push(
-      `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`,
-    )
-  }
+  parts.push(
+    `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`
+  )
+}
 
   // SPOILER
   const spoiler = mods.spoiler
@@ -364,6 +386,7 @@ export default function Home() {
   const [carMake, setCarMake] = useState('')
   const [carModel, setCarModel] = useState('')
   const [carYear, setCarYear] = useState('')
+  const [carColor, setCarColor] = useState('')
 
   // mod selector state
   const [activeModId, setActiveModId] = useState<ModId | null>(null)
@@ -450,13 +473,26 @@ export default function Home() {
     setError(null)
     setImageUrl(null)
 
-    let carDesc = ''
-    if (carMake && carModel && carYear) carDesc = `${carYear} ${carMake} ${carModel}. `
-    else if (carMake && carModel) carDesc = `${carMake} ${carModel}. `
-    else if (carMake) carDesc = `${carMake}. `
+    // Build super explicit base vehicle description
+    const carDescParts: string[] = []
 
+    if (carMake && carModel && carYear) {
+      carDescParts.push(
+        `Base vehicle: exact ${carYear} ${carMake} ${carModel} with factory body style and trim for that model year.`,
+      )
+    } else if (carMake && carModel) {
+      carDescParts.push(`Base vehicle: ${carMake} ${carModel} in factory form.`)
+    } else if (carMake) {
+      carDescParts.push(`Base vehicle: ${carMake} in stock form.`)
+    }
+
+    if (carColor) {
+      carDescParts.push(`Exterior color: ${carColor} factory paint, keep this color accurate.`)
+    }
+
+    const carDesc = carDescParts.join(' ')
     const modsPrompt = buildModsPrompt(selectedMods)
-    const combinedPrompt = `${carDesc}${prompt} ${modsPrompt}`.trim()
+    const combinedPrompt = `${carDesc} ${prompt} ${modsPrompt}`.trim()
 
     try {
       const res = await fetch('/api/generate', {
@@ -512,7 +548,7 @@ export default function Home() {
           <h2 className="text-xs font-semibold tracking-wide text-gray-400 uppercase mb-3">
             0. Car Info (optional)
           </h2>
-          <div className="grid gap-4 md:grid-cols-3 text-sm">
+          <div className="grid gap-4 md:grid-cols-4 text-sm">
             <div className="flex flex-col gap-1">
               <label className="text-gray-300 font-medium text-xs">Make</label>
               <select
@@ -563,6 +599,21 @@ export default function Home() {
                 {YEAR_OPTIONS.map((y) => (
                   <option key={y} value={y.toString()}>
                     {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-gray-300 font-medium text-xs">Color (optional)</label>
+              <select
+                className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
+                value={carColor}
+                onChange={(e) => setCarColor(e.target.value)}
+              >
+                {CAR_COLOR_OPTIONS.map((opt) => (
+                  <option key={opt.label} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
