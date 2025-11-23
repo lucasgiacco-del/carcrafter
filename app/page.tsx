@@ -26,24 +26,6 @@ type SelectedModState = {
 // Years for dropdown (1990–2025)
 const YEAR_OPTIONS = Array.from({ length: 36 }, (_, i) => 2025 - i)
 
-// Common OEM-ish colors (value === label so we can drop straight into the prompt)
-const CAR_COLOR_OPTIONS = [
-  { value: '', label: 'Select color' },
-  { value: 'White', label: 'White' },
-  { value: 'Black', label: 'Black' },
-  { value: 'Silver', label: 'Silver' },
-  { value: 'Gray', label: 'Gray' },
-  { value: 'Nardo Grey', label: 'Nardo Grey' },
-  { value: 'Red', label: 'Red' },
-  { value: 'Blue', label: 'Blue' },
-  { value: 'Dark Blue', label: 'Dark Blue' },
-  { value: 'Green', label: 'Green' },
-  { value: 'Dark Green', label: 'Dark Green' },
-  { value: 'Yellow', label: 'Yellow' },
-  { value: 'Orange', label: 'Orange' },
-  { value: 'Bronze', label: 'Bronze' },
-] as const
-
 const MODS: Mod[] = [
   {
     id: 'tint',
@@ -62,10 +44,9 @@ const MODS: Mod[] = [
     label: 'Wheels',
     description: 'Change the style/color of your wheels.',
     options: [
-      { id: 'black_gloss', label: 'Gloss Black (shiny, aggressive look)' },
-      { id: 'black_matte', label: 'Matte Black (stealth look)' },
-      { id: 'gunmetal', label: 'Gunmetal Grey (OEM+ clean finish)' },
-      { id: 'silver', label: 'Silver (factory style)' },
+      { id: 'black_gloss', label: 'Black (gloss)' },
+      { id: 'black_matte', label: 'Black (matte)' },
+      { id: 'silver', label: 'Silver / OEM' },
       { id: 'chrome', label: 'Chrome (high-shine)' },
     ],
   },
@@ -111,19 +92,18 @@ function buildModsPrompt(mods: Record<ModId, SelectedModState>): string {
   }
 
   // WHEELS
-const wheels = mods.wheels
-if (wheels.enabled && wheels.optionId) {
-  let desc = ''
-  if (wheels.optionId === 'black_gloss') desc = 'gloss black wheels'
-  else if (wheels.optionId === 'black_matte') desc = 'matte black wheels'
-  else if (wheels.optionId === 'gunmetal') desc = 'gunmetal grey wheels'
-  else if (wheels.optionId === 'silver') desc = 'silver wheels'
-  else if (wheels.optionId === 'chrome') desc = 'chrome wheels'
+  const wheels = mods.wheels
+  if (wheels.enabled && wheels.optionId) {
+    let desc = ''
+    if (wheels.optionId === 'black_gloss') desc = 'gloss black wheels'
+    else if (wheels.optionId === 'black_matte') desc = 'matte black wheels'
+    else if (wheels.optionId === 'silver') desc = 'OEM-style bright silver wheels'
+    else if (wheels.optionId === 'chrome') desc = 'high-shine chrome wheels'
 
-  parts.push(
-    `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`
-  )
-}
+    parts.push(
+      `Change ONLY the wheels and tires to ${desc}. Do NOT change the car's body color, windows, lights, trim, or background.`,
+    )
+  }
 
   // SPOILER
   const spoiler = mods.spoiler
@@ -382,11 +362,11 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [justSaved, setJustSaved] = useState(false)
 
   const [carMake, setCarMake] = useState('')
   const [carModel, setCarModel] = useState('')
   const [carYear, setCarYear] = useState('')
-  const [carColor, setCarColor] = useState('')
 
   // mod selector state
   const [activeModId, setActiveModId] = useState<ModId | null>(null)
@@ -459,6 +439,13 @@ export default function Home() {
     }
   }
 
+  function handleSaveCurrent() {
+    if (!imageUrl) return
+    saveToLibrary(imageUrl)
+    setJustSaved(true)
+    setTimeout(() => setJustSaved(false), 2000)
+  }
+
   // generate handler
   async function handleGenerate() {
     const hasTextPrompt = Boolean(prompt.trim())
@@ -472,27 +459,15 @@ export default function Home() {
     setLoading(true)
     setError(null)
     setImageUrl(null)
+    setJustSaved(false)
 
-    // Build super explicit base vehicle description
-    const carDescParts: string[] = []
+    let carDesc = ''
+    if (carMake && carModel && carYear) carDesc = `${carYear} ${carMake} ${carModel}. `
+    else if (carMake && carModel) carDesc = `${carMake} ${carModel}. `
+    else if (carMake) carDesc = `${carMake}. `
 
-    if (carMake && carModel && carYear) {
-      carDescParts.push(
-        `Base vehicle: exact ${carYear} ${carMake} ${carModel} with factory body style and trim for that model year.`,
-      )
-    } else if (carMake && carModel) {
-      carDescParts.push(`Base vehicle: ${carMake} ${carModel} in factory form.`)
-    } else if (carMake) {
-      carDescParts.push(`Base vehicle: ${carMake} in stock form.`)
-    }
-
-    if (carColor) {
-      carDescParts.push(`Exterior color: ${carColor} factory paint, keep this color accurate.`)
-    }
-
-    const carDesc = carDescParts.join(' ')
     const modsPrompt = buildModsPrompt(selectedMods)
-    const combinedPrompt = `${carDesc} ${prompt} ${modsPrompt}`.trim()
+    const combinedPrompt = `${carDesc}${prompt} ${modsPrompt}`.trim()
 
     try {
       const res = await fetch('/api/generate', {
@@ -509,7 +484,6 @@ export default function Home() {
       }
 
       setImageUrl(data.url)
-      saveToLibrary(data.url)
     } catch (err) {
       setError('Server error')
     } finally {
@@ -522,26 +496,41 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center px-4 py-10">
       <div className="w-full max-w-5xl space-y-8">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-2 text-center">
-          <img src="/carcrafter.png" alt="Car Crafter" className="h-20 md:h-24 mb-1" />
+        {/* Hero / Logo */}
+<div className="flex justify-center">
+  <div className="relative flex flex-col items-center text-center gap-3 rounded-3xl border border-purple-500/60 bg-gradient-to-b from-purple-900/40 via-[#0d0d0d] to-[#0d0d0d] px-6 py-5 md:px-10 md:py-7 shadow-[0_0_35px_rgba(168,85,247,0.45)]">
+    <img
+      src="/carcrafter.png"
+      alt="Car Crafter"
+      className="h-16 md:h-20"
+    />
 
-          <p className="text-gray-400 text-sm">
-            Upload a car image (optional), describe the mods, and generate an AI image.
-          </p>
+    <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+      Car Crafter
+    </h1>
 
-          <span
-            className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border ${
-              imageUrl
-                ? 'bg-emerald-900/30 border-emerald-600 text-emerald-300'
-                : usingPhoto
-                  ? 'bg-blue-900/30 border-blue-600 text-blue-300'
-                  : 'bg-gray-800 border-gray-600 text-gray-300'
-            }`}
-          >
-            {imageUrl ? 'Done' : usingPhoto ? 'Editing your uploaded car' : 'Concept render (no photo)'}
-          </span>
-        </div>
+    <p className="text-gray-200 text-sm md:text-base max-w-xl">
+      Upload your car, pick your make, model, year &amp; color, and preview mods like tint,
+      wheels, spoilers, and chrome delete with AI — before you spend money.
+    </p>
+
+    <span
+      className={`mt-1 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium border transition ${
+        imageUrl
+          ? 'border-emerald-400 text-emerald-200 bg-emerald-900/40'
+          : usingPhoto
+            ? 'border-purple-300 text-purple-100 bg-purple-900/40'
+            : 'border-purple-400 text-purple-100 bg-purple-900/25'
+      }`}
+    >
+      {imageUrl
+        ? 'Done · New render saved to your Library'
+        : usingPhoto
+          ? 'Editing your uploaded car photo'
+          : 'Concept render mode (no base photo)'}
+    </span>
+  </div>
+</div>
 
         {/* Car selection card */}
         <section className="bg-[#101010] border border-gray-800 rounded-2xl p-4 md:p-5 shadow-lg shadow-black/40">
@@ -608,14 +597,14 @@ export default function Home() {
               <label className="text-gray-300 font-medium text-xs">Color (optional)</label>
               <select
                 className="bg-[#151515] border border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
-                value={carColor}
-                onChange={(e) => setCarColor(e.target.value)}
+                defaultValue=""
               >
-                {CAR_COLOR_OPTIONS.map((opt) => (
-                  <option key={opt.label} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
+                <option value="">Use car’s original color</option>
+                <option value="black">Black</option>
+                <option value="white">White</option>
+                <option value="silver">Silver / Grey</option>
+                <option value="blue">Blue</option>
+                <option value="red">Red</option>
               </select>
             </div>
           </div>
@@ -650,7 +639,7 @@ export default function Home() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               className="flex-1 w-full bg-[#151515] border border-gray-700 rounded-xl p-3 text-sm resize-none outline-none focus:border-purple-500"
-              placeholder="Example: Lowered stance, matte black wheels, carbon fiber lip, light tint."
+              placeholder="Example: Lowered stance, chrome wheels, carbon lip, 20% tint."
             />
           </div>
 
@@ -736,20 +725,38 @@ export default function Home() {
           {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
         </div>
 
-        {/* Result */}
+        {/* Result + Save button */}
         <div className="mt-4">
           <h2 className="text-sm font-semibold text-gray-300 mb-3">Result</h2>
-          <div className="border border-gray-700 rounded-xl p-4 flex items-center justify-center min-h-[220px] bg-[#151515]">
-            {imageUrl ? (
-              <img src={imageUrl} className="rounded-lg max-h-[480px] object-contain w-full" />
-            ) : loading ? (
-              <span className="text-purple-300 text-sm animate-pulse">
-                Generating your image…
-              </span>
-            ) : (
-              <span className="text-gray-500 text-sm">
-                Your generated image will appear here.
-              </span>
+          <div className="border border-gray-700 rounded-xl p-4 flex flex-col gap-3 min-h-[220px] bg-[#151515]">
+            <div className="flex-1 flex items-center justify-center">
+              {imageUrl ? (
+                <img src={imageUrl} className="rounded-lg max-h-[480px] object-contain w-full" />
+              ) : loading ? (
+                <span className="text-purple-300 text-sm animate-pulse">
+                  Generating your image…
+                </span>
+              ) : (
+                <span className="text-gray-500 text-sm">
+                  Your generated image will appear here.
+                </span>
+              )}
+            </div>
+
+            {imageUrl && (
+              <div className="flex justify-end items-center gap-3">
+                {justSaved && (
+                  <span className="text-[11px] text-emerald-300">
+                    Saved to your Library ✅
+                  </span>
+                )}
+                <button
+                  onClick={handleSaveCurrent}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-purple-500 hover:bg-purple-600/20"
+                >
+                  Save this build to Library
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -775,10 +782,13 @@ export default function Home() {
         </div>
 
         <div className="flex justify-end">
-          <a href="/library" className="text-xs text-gray-400 hover:text-gray-200 underline">
-            View Library →
-          </a>
-        </div>
+  <a
+    href="/library"
+    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-700 bg-[#151515] hover:bg-[#1d1d1d] transition text-gray-200"
+  >
+    View Library →
+  </a>
+  </div>
       </div>
     </main>
   )
