@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useEffect, ChangeEvent } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 
 /* ---------- Types for MakeItRealCard mapping ---------- */
 
@@ -611,7 +611,7 @@ export default function BuildPage() {
   const [packInitialized, setPackInitialized] = useState(false)
 
   const router = useRouter()
-  const searchParams = useSearchParams()
+
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
