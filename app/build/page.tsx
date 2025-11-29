@@ -1,7 +1,7 @@
-"use client";
+'use client'
 
-import { useState, useEffect, ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, ChangeEvent } from 'react'
+import { useRouter } from 'next/navigation'
 
 /* ---------- Types for MakeItRealCard mapping ---------- */
 
@@ -127,7 +127,7 @@ const MODS: Mod[] = [
   },
 ]
 
-// presets for the packs (IDs line up with MODS options)
+// Presets for the packs (IDs line up with MODS options)
 const PACK_PRESETS: Record<ModPackId, Partial<Record<ModId, string>>> = {
   oem_plus: {
     tint: '35',
@@ -137,7 +137,7 @@ const PACK_PRESETS: Record<ModPackId, Partial<Record<ModId, string>>> = {
     wheels: 'silver',
   },
   slammed: {
-    tint: '5', // slammed = 5% limo
+    tint: '5',
     suspension: 'slammed',
     spacers: 'aggressive',
     spoiler: 'ducktail',
@@ -574,10 +574,14 @@ const carOptions: CarOption[] = [
   },
 ]
 
+type Step = 1 | 2 | 3 | 4
+
 /* ---------- Page component ---------- */
 
 export default function BuildPage() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const router = useRouter()
+
+  const [step, setStep] = useState<Step>(1)
 
   const [prompt, setPrompt] = useState('')
   const [inputImage, setInputImage] = useState<string | null>(null)
@@ -610,8 +614,7 @@ export default function BuildPage() {
 
   const [packInitialized, setPackInitialized] = useState(false)
 
-  const router = useRouter()
-
+  /* ---------- File upload / square crop ---------- */
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -651,6 +654,8 @@ export default function BuildPage() {
     reader.readAsDataURL(file)
   }
 
+  /* ---------- Library helpers ---------- */
+
   function saveToLibrary(resultUrl: string) {
     try {
       if (typeof window === 'undefined') return
@@ -686,10 +691,13 @@ export default function BuildPage() {
   }
 
   /* ---------- Apply mod packs from query param ---------- */
+
   useEffect(() => {
     if (packInitialized) return
+    if (typeof window === 'undefined') return
 
-    const packParam = searchParams.get('pack') as ModPackId | null
+    const urlParams = new URLSearchParams(window.location.search)
+    const packParam = urlParams.get('pack') as ModPackId | null
     if (!packParam) return
 
     const preset = PACK_PRESETS[packParam]
@@ -727,9 +735,10 @@ export default function BuildPage() {
 
     setStep((prev) => (prev < 2 ? 2 : prev))
     setPackInitialized(true)
-  }, [searchParams, packInitialized, prompt])
+  }, [packInitialized, prompt])
 
-  // ---------- AUTO STOCK GENERATION (no upload) ----------
+  /* ---------- AUTO STOCK GENERATION (no upload) ---------- */
+
   useEffect(() => {
     if (inputImage) return
     if (beforeUrl) return
@@ -836,7 +845,8 @@ export default function BuildPage() {
     selectedMods,
   ])
 
-  // ---------- GENERATE HANDLER ----------
+  /* ---------- GENERATE HANDLER ---------- */
+
   async function handleGenerate() {
     const usingUploadedPhoto = Boolean(inputImage)
     const hasConceptBefore = Boolean(beforeUrl)
@@ -895,7 +905,6 @@ export default function BuildPage() {
 
     const cameraView = chooseCameraView(prompt, selectedMods)
     const cameraViewPrompt = cameraViewToPrompt(cameraView)
-
     const quickModsText = buildModsPrompt(selectedMods)
 
     const qualityAppend =
@@ -1061,6 +1070,8 @@ export default function BuildPage() {
     }
   }
 
+  /* ---------- UI helpers ---------- */
+
   const usingPhoto = Boolean(inputImage)
   const hasConceptBefore = Boolean(beforeUrl)
   const baseBefore = inputImage || beforeUrl || null
@@ -1118,31 +1129,33 @@ export default function BuildPage() {
   }
 
   const stepsMeta = [
-    { id: 1, title: 'Your Car', subtitle: 'Pick car & upload (optional)' },
-    { id: 2, title: 'Quick Mods', subtitle: 'Tap to add preset mods' },
-    { id: 3, title: 'Extra Details', subtitle: 'Anything we missed?' },
-    { id: 4, title: 'Render & Budget', subtitle: 'Generate & price estimate' },
+    { id: 1 as Step, title: 'Your Car', subtitle: 'Pick car & upload (optional)' },
+    { id: 2 as Step, title: 'Quick Mods', subtitle: 'Tap to add preset mods' },
+    { id: 3 as Step, title: 'Extra Details', subtitle: 'Anything we missed?' },
+    { id: 4 as Step, title: 'Render & Budget', subtitle: 'Generate & price estimate' },
   ] as const
 
   const currentMeta = stepsMeta.find((s) => s.id === step)!
 
-  const canGoNext = (current: 1 | 2 | 3 | 4) => {
-    if (current === 3) return true
-    if (current === 2) return true
+  const canGoNext = (current: Step) => {
     if (current === 1) return true
+    if (current === 2) return true
+    if (current === 3) return true
     return false
   }
 
   const onNext = () => {
     if (step === 4) return
     if (!canGoNext(step)) return
-    setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4)
+    setStep((prev) => (prev + 1) as Step)
   }
 
   const onBack = () => {
     if (step === 1) return
-    setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)
+    setStep((prev) => (prev - 1) as Step)
   }
+
+  /* ---------- RENDER ---------- */
 
   return (
     <main className="min-h-screen bg-[#050509] text-white flex flex-col">
@@ -1459,9 +1472,7 @@ export default function BuildPage() {
                       </p>
                     )}
 
-                    {error && (
-                      <p className="text-[11px] text-red-400">{error}</p>
-                    )}
+                    {error && <p className="text-[11px] text-red-400">{error}</p>}
                   </div>
 
                   {hasAnyCardMods && (
