@@ -88,12 +88,12 @@ type HeroExample = {
 
 const HERO_EXAMPLES: HeroExample[] = [
   {
-    id: 'm2',
-    name: 'BMW M2 – stance & carbon',
-    beforeSrc: '/hero-examples/m2-before.png',
-    afterSrc: '/hero-examples/m2-after.png',
-    summary: 'Coilovers, 5% tint, chrome wheels, carbon hood.',
-    budget: '≈ $3.2k in parts',
+    id: 'c43',
+    name: '2020 Mercedes C43 – wheels & lip',
+    beforeSrc: '/hero-examples/amg-before.png',
+    afterSrc: '/hero-examples/amg-after.png',
+    summary: 'Chrome wheels, front lip, slightly lower ride height.',
+    budget: '≈ $— in parts',
   },
   {
     id: 'a4',
@@ -154,10 +154,10 @@ export default function DashboardPage() {
               />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-xs font-medium tracking-[0.18em] uppercase text-gray-400">
+              <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-gray-200/90">
                 Car Crafter
               </span>
-              <span className="text-[11px] text-gray-400">
+              <span className="text-[11px] text-gray-400/90">
                 Visualize before you spend.
               </span>
             </div>
@@ -179,10 +179,10 @@ export default function DashboardPage() {
                 <p className="text-[10px] uppercase tracking-[0.22em] text-purple-200/80">
                   Your build studio
                 </p>
-                <h1 className="text-lg font-semibold tracking-tight">
+                <h1 className="text-xl font-semibold tracking-tight text-white">
                   Build your dream car in minutes.
                 </h1>
-                <p className="text-[11px] text-gray-300 max-w-xs">
+                <p className="text-[12px] leading-relaxed text-gray-200/80 max-w-sm">
                   Upload your car or start from a stock render, stack mods, and see the
                   before / after instantly. Then price it out before you spend a dollar.
                 </p>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => router.push('/build')}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-600 text-sm font-semibold py-2.5 shadow-[0_14px_40px_rgba(123,97,255,0.45)] transition"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-600 font-semibold py-2.5 shadow-[0_14px_40px_rgba(123,97,255,0.45)] transition"
               >
                 <span className="text-[13px] font-semibold">New build</span>
                 <span className="text-[18px] leading-none">＋</span>
@@ -235,9 +235,9 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              <p className="text-[11px] text-gray-300">
-                Real examples rendered inside the app. Slide between stock and
-                fully-built inside the builder – no Photoshop, no guessing.
+              <p className="text-[12px] leading-relaxed text-gray-200/80">
+                Real examples rendered inside the app. Compare stock vs built — no
+                Photoshop, no guessing.
               </p>
 
               <div className="space-y-2">
@@ -268,15 +268,13 @@ export default function DashboardPage() {
                         <span className="absolute bottom-1.5 left-2 text-[9px] px-2 py-0.5 rounded-full bg-purple-600/80 text-gray-50 uppercase tracking-[0.16em]">
                           After
                         </span>
-                        <span className="absolute bottom-1.5 right-2 text-[9px] px-2 py-0.5 rounded-full bg-black/55 text-gray-200 uppercase tracking-[0.16em]">
-                          Car Crafter
-                        </span>
+                        {/* Watermark pill removed */}
                       </div>
                     </div>
                     <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 text-[10px]">
                       <div>
-                        <p className="font-semibold text-gray-50">{example.name}</p>
-                        <p className="text-gray-300">{example.summary}</p>
+                        <p className="text-[11px] font-semibold text-gray-50">{example.name}</p>
+                        <p className="text-[11px] text-gray-200/80">{example.summary}</p>
                       </div>
                       <p className="text-gray-400 whitespace-nowrap">
                         {example.budget}
@@ -297,7 +295,7 @@ export default function DashboardPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-200/90">
                   Mod packs
                 </h2>
                 <p className="text-[10px] text-gray-500">
@@ -361,7 +359,7 @@ export default function DashboardPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-200/90">
                   Before & after examples
                 </h2>
                 <p className="text-[10px] text-gray-500">

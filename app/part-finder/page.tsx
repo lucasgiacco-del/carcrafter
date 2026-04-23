@@ -1,450 +1,439 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from "next/navigation";
 
-type LibraryItem = {
-  id: string
-  prompt: string
-  originalImage: string | null
-  resultImage: string
-  createdAt: string
-}
+export default function PartFinderPage() {
+  const searchParams = useSearchParams();
 
-type ModPackId = 'oem_plus' | 'slammed' | 'track' | 'street_monster'
+  const make = searchParams.get("make") || "";
+  const model = searchParams.get("model") || "";
+  const year = searchParams.get("year") || "";
 
-type ModPack = {
-  id: ModPackId
-  name: string
-  label: string
-  tagline: string
-  description: string
-  bestFor: string
-  badge: string
-}
+  const wheels = searchParams.get("wheels"); // "chrome", "black_gloss", etc.
+  const tint = searchParams.get("tint");     // "5", "20", etc.
+  const spacers = searchParams.get("spacers");
+  const suspension = searchParams.get("suspension");
+  const spoiler = searchParams.get("spoiler");
+  const chromeDelete = searchParams.get("chrome_delete");
 
-const MOD_PACKS: ModPack[] = [
-  {
-    id: 'oem_plus',
-    name: 'OEM+ Pack',
-    label: 'Daily driver, just better.',
-    tagline: 'Clean, factory-plus street setup.',
-    description:
-      'Mild drop, tasteful tint, subtle aero. Looks like it could have come from the factory that way.',
-    bestFor: 'Daily / OEM+ enjoyers',
-    badge: 'OEM+',
-  },
-  {
-    id: 'slammed',
-    name: 'Slammed Pack',
-    label: 'Show car, sidewalk scraper.',
-    tagline: 'Ultra low, 5% tint, aggressive stance.',
-    description:
-      'Slammed ride height, 5% tint, aggressive spacers and show-car presence while still looking believable.',
-    bestFor: 'Meets / shows / night drives',
-    badge: 'Slammed',
-  },
-  {
-    id: 'track',
-    name: 'Track Pack',
-    label: 'Time-attack ready.',
-    tagline: 'Functional low, aero, and grip.',
-    description:
-      'Coilovers, functional ride height, mild aero and flush stance built for spirited driving.',
-    bestFor: 'Track / canyon / spirited',
-    badge: 'Track',
-  },
-  {
-    id: 'street_monster',
-    name: 'Street Monster Pack',
-    label: 'Zero subtlety.',
-    tagline: 'Loud stance, aggressive aero, deep tint.',
-    description:
-      'Low, loud, and in-your-face. Aggressive height, deep tint, spacers and aero that owns the street.',
-    bestFor: 'Street presence / content',
-    badge: 'Monster',
-  },
-]
+  // super rough per-mod price map (same vibe as MakeItRealCard)
+const ESTIMATED_PRICES: Record<string, number> = {
+  wheels: 1200,
+  suspension: 900,
+  tint: 300,
+  spacers: 250,
+  spoiler: 400,
+  chrome_delete: 350,
+};
 
-function formatShortDate(iso: string) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  })
-}
+const activePriceKeys: string[] = [];
+if (wheels) activePriceKeys.push("wheels");
+if (suspension) activePriceKeys.push("suspension");
+if (tint) activePriceKeys.push("tint");
+if (spacers) activePriceKeys.push("spacers");
+if (spoiler) activePriceKeys.push("spoiler");
+if (chromeDelete) activePriceKeys.push("chrome_delete");
 
-export default function DashboardPage() {
-  const router = useRouter()
-  const [library, setLibrary] = useState<LibraryItem[]>([])
-  const [loaded, setLoaded] = useState(false)
+const estimatedTotal = activePriceKeys.reduce(
+  (sum, key) => sum + (ESTIMATED_PRICES[key] || 0),
+  0
+);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const raw = window.localStorage.getItem('carcrafter_library')
-      if (!raw) {
-        setLoaded(true)
-        return
-      }
-      const parsed = JSON.parse(raw) as LibraryItem[]
-      setLibrary(parsed)
-    } catch (err) {
-      console.error('Failed to read library from localStorage', err)
-    } finally {
-      setLoaded(true)
-    }
-  }, [])
+  const hasAnyMods =
+    wheels || tint || spacers || suspension || spoiler || chromeDelete;
 
-  const mostRecent = useMemo(() => library[0] ?? null, [library])
-  const recentWithBefore = useMemo(
-    () => library.filter((i) => i.originalImage && i.resultImage).slice(0, 3),
-    [library],
-  )
+  const car =
+    [year, make, model].filter(Boolean).join(" ") || "your build";
 
-  const handlePackClick = (id: ModPackId) => {
-    const params = new URLSearchParams()
-    params.set('pack', id)
-    router.push(`/build?${params.toString()}`)
+  function describeTint(t: string | null) {
+    if (!t) return null;
+    if (t === "5") return "5% (limo) window tint";
+    if (t === "20") return "20% (dark) window tint";
+    if (t === "35") return "35% (medium) window tint";
+    if (t === "50") return "50% (light) window tint";
+    if (t === "75") return "75% (very light) window tint";
+    return "window tint";
   }
 
+  function describeWheels(w: string | null) {
+    if (!w) return null;
+    if (w === "chrome") return "chrome wheels";
+    if (w === "black_gloss") return "gloss black wheels";
+    if (w === "black_matte") return "matte black wheels";
+    if (w === "silver") return "silver / OEM-style wheels";
+    return "aftermarket wheels";
+  }
+
+  function describeSpacers(s: string | null) {
+    if (!s) return null;
+    if (s === "mild") return "mild wheel spacers";
+    if (s === "flush") return "flush-fit wheel spacers";
+    if (s === "aggressive") return "aggressive wheel spacers";
+    return "wheel spacers";
+  }
+
+  function describeSuspension(s: string | null) {
+    if (!s) return null;
+    if (s === "springs") return "lowering springs";
+    if (s === "coilovers") return "coilovers";
+    if (s === "slammed") return "slammed / show-car stance";
+    if (s === "stock") return "stock ride height";
+    return "suspension setup";
+  }
+
+  const buildTags: string[] = [];
+
+  const tintDesc = describeTint(tint);
+  const wheelDesc = describeWheels(wheels);
+  const spacerDesc = describeSpacers(spacers);
+  const suspDesc = describeSuspension(suspension);
+
+  if (tintDesc) buildTags.push(tintDesc);
+  if (wheelDesc) buildTags.push(wheelDesc);
+  if (spacerDesc) buildTags.push(spacerDesc);
+  if (suspDesc) buildTags.push(suspDesc);
+  if (spoiler) buildTags.push(spoiler === "ducktail" ? "ducktail spoiler" : "lip spoiler");
+  if (chromeDelete) buildTags.push("blackout window trim");
+
   return (
-    <main className="min-h-screen bg-[#020308] text-white flex flex-col">
-      {/* App header */}
-      <header className="border-b border-white/5 bg-gradient-to-b from-[#141428] via-[#050509] to-transparent">
-        <div className="max-w-md mx-auto px-4 pt-4 pb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-2xl bg-black border border-white/10 overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-              <img
-                src="/carcrafter.png"
-                alt="Car Crafter"
-                className="h-9 w-9 object-contain"
-              />
+    <main className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center px-4 py-10">
+      <div className="w-full max-w-4xl space-y-6">
+        {/* Breadcrumb / label */}
+        <p className="text-[11px] uppercase tracking-[0.15em] text-gray-500">
+          Part Finder
+        </p>
+
+        {/* Hero: Make this build real */}
+        <section className="rounded-3xl border border-purple-500/60 bg-gradient-to-br from-purple-900/40 via-[#111111] to-black p-5 md:p-7 shadow-[0_0_35px_rgba(168,85,247,0.45)] space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-1.5">
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+                Make this build real
+              </h1>
+              <p className="text-xs md:text-sm text-gray-300">
+                Build:&nbsp;
+                <span className="font-medium text-white">{car}</span>
+              </p>
+
+              {hasAnyMods ? (
+                <p className="text-[11px] md:text-xs text-purple-100/90">
+                  Based on your render:&nbsp;
+                  {buildTags.map((t, i) => (
+                    <span key={t}>
+                      {i > 0 && " · "}
+                      {t}
+                    </span>
+                  ))}
+                </p>
+              ) : (
+                <p className="text-[11px] md:text-xs text-gray-400">
+                  When you render a build with wheels, tint, suspension, and more,
+                  Part Finder will match real parts to those exact choices.
+                </p>
+              )}
+
+              <p className="text-xs md:text-sm text-gray-400 max-w-xl mt-1.5">
+                Car Crafter Premium turns your render into a real shopping list:
+                compatible parts, estimated costs, and vendors that fit your car.
+              </p>
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs font-medium tracking-[0.18em] uppercase text-gray-400">
-                Car Crafter
-              </span>
-              <span className="text-[11px] text-gray-400">
-                Visualize before you spend.
-              </span>
+
+      {/* Estimated build total */}
+      {estimatedTotal > 0 && (
+        <p className="text-[11px] md:text-xs text-amber-100/90 mt-1.5">
+          Rough parts budget for this build:{" "}
+          <span className="font-semibold">
+            ~${estimatedTotal.toLocaleString()}
+          </span>{" "}
+          (parts only, no labor).
+        </p>
+      )}
+      
+            <div className="flex flex-col items-stretch gap-2 min-w-[220px]">
+              <button className="w-full rounded-full bg-white text-black text-sm font-semibold py-2.5 px-5 hover:bg-gray-100 transition">
+                Unlock Part Finder (Premium)
+              </button>
+              <p className="text-[11px] text-gray-400 text-center">
+                See real parts, rough total cost, and where to buy — all in one place.
+              </p>
             </div>
           </div>
 
-          <span className="text-[10px] px-2 py-1 rounded-full border border-purple-400/60 bg-purple-500/10 text-purple-200 tracking-[0.18em] uppercase">
-            Alpha
-          </span>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <div className="flex-1 flex justify-center">
-        <div className="w-full max-w-md px-4 pb-5 pt-2 flex flex-col gap-6">
-          {/* HERO – build studio + featured build */}
-          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#22123f] via-[#0a0716] to-[#050509] shadow-[0_26px_60px_rgba(0,0,0,0.9)] px-4 py-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-purple-200/80">
-                  Your build studio
-                </p>
-                <h1 className="text-lg font-semibold tracking-tight">
-                  Build your dream car in minutes.
-                </h1>
-                <p className="text-[11px] text-gray-300 max-w-xs">
-                  Upload your car or start from a stock render, stack mods, and see the
-                  before / after instantly. Then price it out before you spend a dollar.
-                </p>
-              </div>
-              {mostRecent && mostRecent.resultImage && (
-                <div className="hidden sm:block h-16 w-24 rounded-2xl overflow-hidden border border-white/15 bg-black/40">
-                  <img
-                    src={mostRecent.resultImage}
-                    alt="Latest build"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => router.push('/build')}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-600 text-sm font-semibold py-2.5 shadow-[0_14px_40px_rgba(123,97,255,0.45)] transition"
-              >
-                <span className="text-[13px] font-semibold">New build</span>
-                <span className="text-[18px] leading-none">＋</span>
-              </button>
-
-              {mostRecent && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/library')}
-                  className="flex-1 inline-flex items-center justify-center rounded-xl border border-white/12 bg-white/5 text-[11px] font-medium text-gray-100 hover:border-purple-400/80 hover:bg-purple-900/25 transition"
+          {hasAnyMods && (
+            <div className="flex flex-wrap gap-2 text-[11px] text-purple-100/80 mt-1">
+              {buildTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 rounded-full border border-purple-400/40 bg-purple-900/40"
                 >
-                  Continue last build
-                </button>
-              )}
-            </div>
-
-            {/* Featured pricing example */}
-            <div className="mt-3 rounded-2xl border border-white/10 bg-black/25 px-3 py-3 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                    Featured build example
-                  </p>
-                  <p className="text-[13px] font-semibold">
-                    Slammed Audi A4 · carbon & tint
-                  </p>
-                </div>
-                <span className="text-[10px] px-2 py-1 rounded-full bg-purple-500/15 border border-purple-400/60 text-purple-100 uppercase tracking-[0.16em]">
-                  Example
+                  {tag}
                 </span>
-              </div>
-              <p className="text-[11px] text-gray-300">
-                Coilovers, 5% tint, aggressive spacers, carbon lip & diffuser. The kind
-                of build you actually see in the wild.
-              </p>
-              <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-gray-300">
-                <div className="flex justify-between">
-                  <span>Wheels</span>
-                  <span>~$1,200</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Suspension</span>
-                  <span>~$900</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Aero / carbon</span>
-                  <span>~$800</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tint & misc</span>
-                  <span>~$400</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/10 text-[10px]">
-                <span className="text-gray-400">Total parts ballpark</span>
-                <span className="font-semibold text-gray-50">≈ $3,300</span>
-              </div>
-            </div>
-          </section>
-
-          {/* MOD PACKS */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
-                  Mod packs
-                </h2>
-                <p className="text-[10px] text-gray-500">
-                  One-tap starting points tailored to different scenes.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-              {/* First tile: plain new build */}
-              <button
-                type="button"
-                onClick={() => router.push('/build')}
-                className="min-w-[150px] h-32 rounded-2xl border border-dashed border-gray-700 bg-[#07070d] flex flex-col items-center justify-center gap-2 hover:border-purple-500 hover:bg-purple-950/40 transition"
-              >
-                <div className="relative w-9 h-9">
-                  <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1.5px] rounded-full bg-gray-400" />
-                  <span className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1.5px] rounded-full bg-gray-400" />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold">Blank canvas</p>
-                  <p className="text-[10px] text-gray-400">Start from scratch</p>
-                </div>
-              </button>
-
-              {MOD_PACKS.map((pack) => (
-                <button
-                  key={pack.id}
-                  type="button"
-                  onClick={() => handlePackClick(pack.id)}
-                  className="min-w-[190px] h-32 rounded-2xl border border-gray-800 bg-gradient-to-br from-[#1c1034] via-[#090812] to-[#050509] overflow-hidden relative group text-left flex flex-col justify-between p-3 hover:border-purple-500/80 hover:shadow-[0_18px_50px_rgba(123,97,255,0.45)] transition"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] font-semibold">{pack.name}</p>
-                      <p className="text-[10px] text-gray-300 line-clamp-2">
-                        {pack.tagline}
-                      </p>
-                    </div>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/70 text-purple-100 uppercase tracking-[0.16em]">
-                      {pack.badge}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-[10px] text-gray-400 line-clamp-2">
-                    {pack.description}
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[9px] text-gray-500">
-                      Best for: {pack.bestFor}
-                    </span>
-                    <span className="text-[9px] text-purple-200 group-hover:text-purple-50">
-                      Load pack →
-                    </span>
-                  </div>
-                </button>
               ))}
             </div>
-          </section>
+          )}
 
-          {/* BEFORE / AFTER EXAMPLES */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
-                  Before & after examples
-                </h2>
-                <p className="text-[10px] text-gray-500">
-                  Real builds from your library, shown like case studies.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => router.push('/library')}
-                className="text-[11px] text-purple-300 hover:text-purple-100"
-              >
-                View all →
-              </button>
+          {!hasAnyMods && (
+            <div className="flex flex-wrap gap-2 text-[11px] text-purple-100/80">
+              <span className="px-3 py-1 rounded-full border border-purple-400/40 bg-purple-900/40">
+                🔒 Exact parts for your build
+              </span>
+              <span className="px-3 py-1 rounded-full border border-purple-400/40 bg-purple-900/40">
+                🔒 Estimated total for your build
+              </span>
+              <span className="px-3 py-1 rounded-full border border-purple-400/40 bg-purple-900/40">
+                🔒 Online + local vendor suggestions
+              </span>
             </div>
+          )}
+        </section>
 
-            {recentWithBefore.length > 0 ? (
-              <div className="space-y-3">
-                {recentWithBefore.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => router.push('/library')}
-                    className="w-full rounded-3xl border border-gray-850 bg-[#080812] overflow-hidden shadow-[0_18px_54px_rgba(0,0,0,0.9)] text-left hover:border-purple-500/80 hover:bg-purple-950/40 transition"
-                  >
-                    <div className="w-full flex">
-                      <div className="w-1/2 relative h-28 sm:h-32 border-r border-black/40">
-                        <img
-                          src={item.originalImage || item.resultImage}
-                          alt="Before"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                        <span className="absolute bottom-1.5 left-2 text-[9px] px-2 py-0.5 rounded-full bg-black/60 text-gray-100 uppercase tracking-[0.16em]">
-                          Before
-                        </span>
-                      </div>
-                      <div className="w-1/2 relative h-28 sm:h-32">
-                        <img
-                          src={item.resultImage}
-                          alt="After"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                        <span className="absolute bottom-1.5 left-2 text-[9px] px-2 py-0.5 rounded-full bg-purple-600/80 text-gray-50 uppercase tracking-[0.16em]">
-                          After
-                        </span>
-                      </div>
-                    </div>
-                    <div className="px-3.5 py-3 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-[11px] font-semibold">
-                            Saved build · AI render
-                          </p>
-                          <p className="text-[10px] text-gray-300 line-clamp-2">
-                            {item.prompt || 'Saved from Car Crafter builder.'}
-                          </p>
-                        </div>
-                        {item.createdAt && (
-                          <span className="text-[10px] text-gray-500">
-                            {formatShortDate(item.createdAt)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] mt-1 pt-1 border-t border-white/10">
-                        <span className="text-gray-400">
-                          Tap to see this build in your Library
-                        </span>
-                        <span className="text-purple-300 text-[10px]">
-                          Open build →
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : loaded ? (
-              <div className="rounded-2xl border border-gray-800 bg-[#070711] p-3 text-[11px] text-gray-300">
-                Save a few builds from the builder and they’ll show up here as
-                before/after examples.
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-gray-800 bg-gradient-to-r from-[#090912] via-[#151525] to-[#090912] animate-pulse h-24" />
+        {/* Contextual sections based on selected mods */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold text-gray-200">
+            Based on this render, Part Finder would show…
+          </h2>
+
+          <div className="space-y-3">
+            {/* Wheels section */}
+            {wheels && (
+              <ContextGroup
+                title={
+                  wheelDesc
+                    ? `Wheel options matching your ${wheelDesc}`
+                    : "Wheel options for this build"
+                }
+                subtitle="Sizes and offsets chosen to work with your stance and spacers."
+                items={[
+                  {
+                    name: "Rotiform LAS-R (19x8.5)",
+                    detail: "Chrome / high-polish finish, 5x112, ET35",
+                    estPrice: "$1,400–$1,700 set",
+                  },
+                  {
+                    name: "TSW Bathurst (19x8.5)",
+                    detail: "Mirror-cut face, 5x112, ET35",
+                    estPrice: "$1,200–$1,500 set",
+                  },
+                  {
+                    name: "OEM-Plus Chrome Replica",
+                    detail: "Stock-inspired design, 19x8.0, 5x112, ET40",
+                    estPrice: "$950–$1,200 set",
+                  },
+                ]}
+              />
             )}
-          </section>
 
-          {/* MAKE THIS A REALITY – pricing example card */}
-          <section className="space-y-3">
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                type="button"
-                onClick={() => router.push('/library')}
-                className="w-full rounded-3xl bg-[#0b0b14] border border-white/8 px-4 py-3 text-left shadow-[0_18px_54px_rgba(0,0,0,0.9)] hover:border-purple-500/80 hover:bg-purple-950/30 transition"
-              >
-                <p className="text-[10px] uppercase tracking-[0.22em] text-gray-400">
-                  Make this a reality
-                </p>
-                <p className="text-sm font-semibold mt-1">
-                  See your before / after examples with rough pricing.
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Open your Library to see every build you’ve saved, compare before /
-                  after, and ballpark what it would cost to do in real life.
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-300">
-                  <span>Stance + wheels build: ≈ $2.1k</span>
-                  <span>Full aero street monster: ≈ $3.8k</span>
-                  <span>OEM+ tint + mild drop: ≈ $1.2k</span>
-                  <span>Track-ready setup: ≈ $2.7k</span>
-                </div>
-              </button>
+            {/* Tint section */}
+            {tint && (
+              <ContextGroup
+                title={
+                  tintDesc
+                    ? `Window tint kits similar to your ${tintDesc}`
+                    : "Window tint options"
+                }
+                subtitle="Film quality and legal limits vary by state — this is just a rough guide."
+                items={[
+                  {
+                    name: "3M Ceramic IR",
+                    detail: "High-heat rejection ceramic film, lifetime warranty",
+                    estPrice: "$400–$650 installed",
+                  },
+                  {
+                    name: "XPEL XR Plus",
+                    detail: "Premium ceramic, great heat rejection, color-stable",
+                    estPrice: "$500–$800 installed",
+                  },
+                  {
+                    name: "SunTek Carbon",
+                    detail: "Budget-friendly carbon film, low reflectivity",
+                    estPrice: "$250–$450 installed",
+                  },
+                ]}
+              />
+            )}
 
-              <button
-                type="button"
-                onClick={() => router.push('/part-finder')}
-                className="w-full rounded-3xl bg-[#0b0b14] border border-white/8 px-4 py-3 text-left shadow-[0_18px_54px_rgba(0,0,0,0.9)] hover:border-purple-500/80 hover:bg-purple-950/30 transition"
-              >
-                <p className="text-[10px] uppercase tracking-[0.22em] text-gray-400">
-                  Part Finder
-                </p>
-                <p className="text-sm font-semibold mt-1">
-                  Find parts with ease of mind in seconds.
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Match your digital build to real parts and rough pricing, without
-                  digging through 20 tabs of forums, Facebook Marketplace, and random
-                  vendors.
-                </p>
-                <p className="mt-2 text-[10px] text-purple-200">
-                  Coming soon: direct links to wheels, coilovers, aero and tint for your
-                  exact car.
-                </p>
-              </button>
-            </div>
-          </section>
-        </div>
+            {/* Spacers section */}
+            {spacers && (
+              <ContextGroup
+                title={
+                  spacerDesc
+                    ? `Spacer kits to match your ${spacerDesc}`
+                    : "Wheel spacer options"
+                }
+                subtitle="Hubcentric spacers matched to bolt pattern and hub bore."
+                items={[
+                  {
+                    name: "ECS Tuning Flush Kit",
+                    detail: "Front & rear spacers sized to sit flush with fenders",
+                    estPrice: "$180–$260 kit",
+                  },
+                  {
+                    name: "H&R Trak+ Spacers",
+                    detail: "High-quality hubcentric spacers for VAG platforms",
+                    estPrice: "$160–$230 pair",
+                  },
+                  {
+                    name: "APR Wheel Spacer Set",
+                    detail: "Track-tested spacer setup for street builds",
+                    estPrice: "$190–$280 kit",
+                  },
+                ]}
+              />
+            )}
+
+            {/* Suspension section */}
+            {suspension && (
+              <ContextGroup
+                title={
+                  suspDesc
+                    ? `Suspension options for your ${suspDesc} stance`
+                    : "Suspension options for this build"
+                }
+                subtitle="Matched to your wheel and spacer setup to avoid rubbing."
+                items={[
+                  {
+                    name: "Bilstein B12 Pro Kit",
+                    detail: "Matched shocks + springs, mild drop, daily drivable",
+                    estPrice: "$900–$1,200",
+                  },
+                  {
+                    name: "KW V2 Coilovers",
+                    detail: "Height-adjustable, comfortable street ride",
+                    estPrice: "$1,600–$2,000",
+                  },
+                  {
+                    name: "BC Racing BR Series",
+                    detail: "Budget-friendly coilovers with damping adjustment",
+                    estPrice: "$1,100–$1,400",
+                  },
+                ]}
+              />
+            )}
+
+            {/* Spoiler section */}
+            {spoiler && (
+              <ContextGroup
+                title={
+                  spoiler === "ducktail"
+                    ? "Ducktail trunk spoilers sized for your car"
+                    : "Lip spoilers that match your trunk shape"
+                }
+                subtitle="Paint-matched and carbon fiber options for your specific chassis."
+                items={[
+                  {
+                    name: "Paint-Matched Lip Spoiler",
+                    detail: "Subtle OEM+ look, tape-on install",
+                    estPrice: "$180–$350",
+                  },
+                  {
+                    name: "Carbon Fiber Ducktail",
+                    detail: "Aggressive profile, gloss carbon finish",
+                    estPrice: "$380–$650",
+                  },
+                  {
+                    name: "High-Kick Trunk Spoiler",
+                    detail: "More aggressive than OEM lip, still daily-friendly",
+                    estPrice: "$240–$420",
+                  },
+                ]}
+              />
+            )}
+
+            {/* Chrome delete section */}
+            {chromeDelete && (
+              <ContextGroup
+                title="Chrome delete options for your window trim"
+                subtitle="Vinyl wrap or replacement trim matched to your paint and tint."
+                items={[
+                  {
+                    name: "Vinyl Chrome Delete Kit",
+                    detail: "Pre-cut vinyl for window trim, gloss or satin black",
+                    estPrice: "$150–$250 (DIY) / $350–$600 installed",
+                  },
+                  {
+                    name: "Replacement Blackout Trim",
+                    detail: "OEM or OEM-style black trim pieces",
+                    estPrice: "$400–$800 parts",
+                  },
+                  {
+                    name: "Pro Shop Chrome Delete",
+                    detail: "Custom wrap by a local shop",
+                    estPrice: "$400–$700 installed",
+                  },
+                ]}
+              />
+            )}
+
+            {!hasAnyMods && (
+              <p className="text-[11px] text-gray-500">
+                Once you pick wheels, tint, suspension, spacers, and more in Car Crafter,
+                this page will turn into a shopping roadmap matched to that build.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Big Premium banner */}
+        <section className="mt-4 rounded-2xl border border-dashed border-amber-300 bg-amber-50/10 p-4 text-xs text-amber-100">
+          <p className="font-semibold text-sm mb-1">
+            Part Finder is a Premium feature.
+          </p>
+          <p className="text-[11px] text-amber-100/90">
+            Free users can preview builds with AI. Premium members unlock real-world
+            parts and pricing matched to their render — so you can stop guessing and
+            start ordering with confidence.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+/* ----- ContextGroup: a simple “section with 3 items” component ----- */
+
+type ContextItem = {
+  name: string;
+  detail: string;
+  estPrice: string;
+};
+
+type ContextGroupProps = {
+  title: string;
+  subtitle?: string;
+  items: ContextItem[];
+};
+
+function ContextGroup({ title, subtitle, items }: ContextGroupProps) {
+  return (
+    <section className="rounded-2xl border border-gray-800 bg-[#101010] p-4 space-y-2">
+      <div>
+        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        {subtitle && (
+          <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>
+        )}
       </div>
 
-      {/* iOS style home bar */}
-      <footer className="border-t border-white/5 bg-[#050509]/95 backdrop-blur">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-center">
-          <div className="w-24 h-1.5 rounded-full bg-white/12" />
-        </div>
-      </footer>
-    </main>
-  )
+      <div className="mt-2 space-y-2">
+        {items.map((item) => (
+          <article
+            key={item.name}
+            className="rounded-xl border border-gray-700 bg-[#151515] px-3 py-2.5 text-[11px] flex flex-col gap-0.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-gray-50">{item.name}</p>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-900 border border-gray-700 text-gray-200">
+                {item.estPrice}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-300">{item.detail}</p>
+          </article>
+        ))}
+      </div>
+
+      <p className="mt-1 text-[10px] text-gray-500">
+        These are example ranges. Premium would show parts matched to your exact
+        chassis, bolt pattern, and build.
+      </p>
+    </section>
+  );
 }
