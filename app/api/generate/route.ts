@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const RENDER_COST_ESTIMATE = {
+  model: "gpt-image-1.5",
+  size: "1024x1024",
+  quality: "medium",
+  estimatedUsd: 0.034,
+  note: "Assumes the current default GPT Image 1.5 quality for 1024x1024 edits.",
+};
+
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -180,9 +188,6 @@ export async function POST(req: NextRequest) {
     function buildRules(): string {
       const lines: string[] = [];
 
-      lines.push('Rules:');
-      lines.push('- Edit a real car photo. Photoreal.');
-      lines.push('- Keep camera, framing, background, and lighting unchanged.');
 
       if (maskDataUrl) {
         lines.push('- If mask is provided: ONLY change pixels inside the transparent/editable mask. Outside mask must be IDENTICAL.');
@@ -200,65 +205,52 @@ export async function POST(req: NextRequest) {
         return inferred;
       })();
 
-      if (mods.includes('wheels') || mods.includes('diffuser')) {
-        lines.push('- Priority: wheels and rear diffuser/exhaust are highest priority when multiple mods are combined.');
-      }
-
-      // Task list: only add constraints for what is actually being edited.
-      if (mods.includes('wheels')) {
-        lines.push('- Task: change ONLY wheels/tires (design/finish).');
-      }
-
       if (mods.includes('diffuser')) {
         if (selectedDiffuserStyle === 'sport_with_quads') {
-          lines.push('- Task: add OEM+ sport rear diffuser with FOUR clearly visible exhaust tips.');
+          lines.push('- Keep four clearly visible exhaust tips with the OEM+ sport rear diffuser.');
           lines.push('- Quad tips are required and must stay visible even with other mods.');
         } else {
-          lines.push('- Task: modify ONLY the rear diffuser/lower valance; keep factory exhaust tips unchanged.');
+          lines.push('- Keep factory exhaust tips unchanged.');
         }
         lines.push('- Keep taillights, trunk, plate, and upper rear bumper unchanged.');
       }
 
       if (mods.includes('spoiler')) {
-        lines.push('- Task: add ONE visible 3D trunk spoiler (lip/duckbill as requested).');
         lines.push('- Spoiler must have crisp edges, slight thickness, and a soft contact shadow on the trunk so it looks real (not a faded paint blur).');
         lines.push('- Keep taillights, trunk shape, badges, plate, bumper unchanged.');
       }
 
-      if (mods.includes('front_lip')) {
-        lines.push('- Task: add/modify ONLY the front lip/splitter.');
-        lines.push('- Keep headlights, grille, hood, paint, background unchanged.');
-      }
-
       if (mods.includes('tint')) {
-        lines.push('- Task: darken only the window glass for tint.');
         lines.push('- Do NOT apply any global color/exposure/contrast changes.');
       }
 
-      if (mods.includes('suspension')) {
-        lines.push('- Task: adjust ONLY ride height.');
-      }
-
-      if (mods.includes('paint')) {
-        lines.push('- Task: change ONLY body paint color/finish as requested.');
-      }
-
       if (mods.includes('chrome_delete')) {
-        lines.push('- Task: convert chrome trim to gloss black as requested; keep badges/rings unchanged.');
+        lines.push('- Keep badges/rings unchanged.');
       }
 
       return lines.join('\n') + '\n';
     }
 
     const rules = buildRules();
+    const structureReminder =
+      " Final reminder: keep the original headlights, grille structure, foglight's, taillight design, and factory body lines.";
 
     const baseInstruction = `${rules}`;
 
     // Final prompt that is actually sent to the model
-    let prompt = `${baseInstruction}User request: ${modifiedRequest}`;
+    let prompt = `${baseInstruction}${modifiedRequest}${structureReminder}`;
 
-    // Hard-cap prompt length (avoid skimming / drift). Keep it tight.
-    if (prompt.length > 480) prompt = prompt.slice(0, 480);
+    // Hard-cap prompt length (avoid skimming / drift). Keep the reminder intact at the end.
+    const maxPromptLength = 480;
+    if (prompt.length > maxPromptLength) {
+      const reservedTail = structureReminder.length;
+      const maxRequestLength = Math.max(
+        0,
+        maxPromptLength - baseInstruction.length - reservedTail,
+      );
+      const trimmedRequest = modifiedRequest.slice(0, maxRequestLength).trim();
+      prompt = `${baseInstruction}${trimmedRequest}${structureReminder}`;
+    }
     console.log('🔧 onlyModIdStr:', onlyModIdStr);
     console.log('🔧 modifiedRequestFinal:', modifiedRequest);
     console.log('🔧 selectedSpoilerStyle:', selectedSpoilerStyle);
@@ -356,11 +348,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Edit succeeded
-    let url: string | undefined = data?.data?.[0]?.url;
-    if (!url && data?.data?.[0]?.b64_json) {
+    // Prefer inline base64 when available so the client gets a stable, shareable
+    // asset instead of a short-lived remote URL.
+    let url: string | undefined;
+    if (data?.data?.[0]?.b64_json) {
       const b64 = data.data[0].b64_json as string;
       url = `data:image/png;base64,${b64}`;
+    }
+    if (!url && data?.data?.[0]?.url) {
+      url = data.data[0].url as string;
     }
 
     if (!url) {
@@ -374,7 +370,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ url });
+    return NextResponse.json({
+      url,
+      finalPrompt: prompt,
+      costEstimate: RENDER_COST_ESTIMATE,
+    });
   } catch (err) {
     console.error("Server error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

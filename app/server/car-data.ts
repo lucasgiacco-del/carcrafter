@@ -43,6 +43,13 @@ export type GenRule = {
 }
 
 export type GenDB = Record<string, Record<string, GenRule[]>>
+export type GenerationLabelRule = {
+  from: number
+  to: number
+  name: string
+}
+
+export type VehicleGenerationDB = Record<string, Record<string, GenerationLabelRule[]>>
 
 /* ---------- Gemini-safe text helpers ---------- */
 
@@ -125,17 +132,32 @@ export function modelAliasKey(make: string, model: string): string | null {
 
     if (m.startsWith('s4')) return 's4'
     if (m.startsWith('q5')) return 'q5'
+    if (m.startsWith('sq5')) return 'sq5'
+    if (m.startsWith('a4 allroad quattro')) return 'a4 allroad'
+  }
+
+  // ---------- ACURA ----------
+  if (mk === 'acura') {
+    if (m.startsWith('ilx')) return 'ilx'
+    if (m.startsWith('tlx')) return 'tlx'
+    if (m.startsWith('integra type s')) return 'integra'
+    if (m.startsWith('integra')) return 'integra'
   }
 
   // ---------- BMW ----------
   if (mk === 'bmw') {
     if (/\b(320i|328i|330i|330e|335i|340i|m340i|m3)\b/.test(m)) return '3 series'
+    if (/\b(430i|440i|m440i|m4)\b/.test(m)) return '4 series'
     if (/\b(528i|530i|530e|535i|540i|550i|m550i|m5)\b/.test(m)) return '5 series'
+    if (m.startsWith('4 series')) return '4 series'
   }
 
   // ---------- MERCEDES-BENZ ----------
   if (mk === 'mercedes-benz') {
+    if (m.startsWith('c 63 amg') || m.startsWith('c63 amg')) return 'c 63 amg'
+    if (m.startsWith('c 43 amg') || m.startsWith('c43 amg')) return 'c 43 amg'
     if (m.startsWith('c 300')) return 'c 300'
+    if (m.startsWith('c300')) return 'c 300'
   }
 
   // ---------- HONDA ----------
@@ -143,12 +165,15 @@ export function modelAliasKey(make: string, model: string): string | null {
     if (m.startsWith('accord')) return 'accord'
     if (m.startsWith('civic')) return 'civic'
     if (m.startsWith('cr-v')) return 'cr-v'
+    if (m.startsWith('crv')) return 'cr-v'
     if (m.startsWith('hr-v')) return 'hr-v'
+    if (m.startsWith('hrv')) return 'hr-v'
   }
 
   // ---------- TOYOTA ----------
   if (mk === 'toyota') {
     if (m.startsWith('camry')) return 'camry'
+    if (m.startsWith('gr corolla')) return 'gr corolla'
     if (m.startsWith('corolla')) return 'corolla'
     if (m.startsWith('rav4')) return 'rav4'
   }
@@ -157,6 +182,114 @@ export function modelAliasKey(make: string, model: string): string | null {
   if (mk === 'tesla') {
     if (m.startsWith('model 3')) return 'model 3'
     if (m.startsWith('model y')) return 'model y'
+  }
+
+  // ---------- CADILLAC ----------
+  if (mk === 'cadillac') {
+    if (m.startsWith('ats-v')) return 'ats'
+    if (m.startsWith('ats')) return 'ats'
+    if (m.startsWith('cts-v')) return 'cts'
+    if (m.startsWith('cts')) return 'cts'
+    if (m.startsWith('ct4-v')) return 'ct4'
+    if (m.startsWith('ct4')) return 'ct4'
+    if (m.startsWith('ct5-v')) return 'ct5'
+    if (m.startsWith('ct5')) return 'ct5'
+  }
+
+  // ---------- CHEVROLET ----------
+  if (mk === 'chevrolet') {
+    if (m.startsWith('camaro')) return 'camaro'
+    if (m.startsWith('malibu')) return 'malibu'
+  }
+
+  // ---------- DODGE ----------
+  if (mk === 'dodge') {
+    if (m.startsWith('challenger')) return 'challenger'
+    if (m.startsWith('charger')) return 'charger'
+  }
+
+  // ---------- FORD ----------
+  if (mk === 'ford') {
+    if (m.startsWith('fusion')) return 'fusion'
+    if (m.startsWith('focus')) return 'focus'
+    if (m.startsWith('mustang') || m.startsWith('shelby gt350')) return 'mustang'
+  }
+
+  // ---------- GENESIS ----------
+  if (mk === 'genesis') {
+    if (m.startsWith('g70')) return 'g70'
+    if (m.startsWith('g80')) return 'g80'
+    if (m.startsWith('g90')) return 'g90'
+  }
+
+  // ---------- HYUNDAI ----------
+  if (mk === 'hyundai') {
+    if (m.startsWith('elantra')) return 'elantra'
+    if (m.startsWith('sonata')) return 'sonata'
+    if (m.startsWith('veloster n')) return 'veloster n'
+  }
+
+  // ---------- INFINITI ----------
+  if (mk === 'infiniti') {
+    if (m.startsWith('g37')) return 'g37'
+    if (m.startsWith('q50')) return 'q50'
+    if (m.startsWith('q60')) return 'q60'
+    if (m.startsWith('red sport 400')) return 'red sport 400'
+  }
+
+  // ---------- KIA ----------
+  if (mk === 'kia') {
+    if (m.startsWith('k5')) return 'k5'
+    if (m.startsWith('optima')) return 'optima'
+    if (m.startsWith('stinger')) return 'stinger'
+  }
+
+  // ---------- LEXUS ----------
+  if (mk === 'lexus') {
+    if (m.startsWith('is')) return 'is'
+    if (m.startsWith('rc')) return 'rc'
+    if (m.startsWith('gs')) return 'gs'
+    if (m.startsWith('es')) return 'es'
+  }
+
+  // ---------- MAZDA ----------
+  if (mk === 'mazda') {
+    if (m.startsWith('mazda6') || m === '6') return 'mazda6'
+    if (m.startsWith('mazda3 hatchback')) return 'mazda3 hatchback'
+    if (m.startsWith('mazda3') || m === '3') return 'mazda3'
+  }
+
+  // ---------- NISSAN ----------
+  if (mk === 'nissan') {
+    if (m.startsWith('altima')) return 'altima'
+    if (m.startsWith('maxima')) return 'maxima'
+    if (m.startsWith('370z')) return '370z'
+    if (m.startsWith('z nismo')) return 'z nismo'
+    if (m === 'z' || m.startsWith('z ')) return 'z'
+  }
+
+  // ---------- PORSCHE ----------
+  if (mk === 'porsche') {
+    if (m.startsWith('911')) return '911'
+    if (m.startsWith('718 boxster')) return '718 boxster'
+    if (m.startsWith('718 cayman')) return '718 cayman'
+    if (m.startsWith('taycan')) return 'taycan'
+  }
+
+  // ---------- SUBARU ----------
+  if (mk === 'subaru') {
+    if (m === 'sti' || m.startsWith('wrx sti')) return 'wrx sti'
+    if (m.startsWith('wrx')) return 'wrx'
+    if (m.startsWith('brz')) return 'brz'
+  }
+
+  // ---------- VOLKSWAGEN ----------
+  if (mk === 'volkswagen') {
+    if (m === 'gti' || m.startsWith('golf gti')) return 'golf gti'
+    if (m.startsWith('golf r')) return 'golf r'
+    if (m === 'gli' || m.startsWith('jetta gli')) return 'jetta gli'
+    if (m.startsWith('arteon')) return 'arteon'
+    if (m.startsWith('passat')) return 'passat'
   }
 
   return null
@@ -268,6 +401,383 @@ export function resolveFascia({ make, model, year }: ResolveFasciaArgs): GenRule
 
   const hit = rules?.find((r) => y >= r.from && y <= r.to)
   return hit ?? null
+}
+
+export function listFasciaGenerations({
+  make,
+  model,
+  year,
+}: ResolveFasciaArgs): GenRule[] {
+  const y = typeof year === 'string' ? Number(year) : year
+  if (!make || !model) return []
+
+  const makeKey = normalizeMakeKey(make)
+  const modelKey = normalizeModelKey(model)
+  const baseKey = baseModelKey(model)
+  const makeRules = GEN_DB[makeKey]
+  const aliasKey = modelAliasKey(make, model)
+
+  const rules =
+    makeRules?.[modelKey] ||
+    (aliasKey ? makeRules?.[aliasKey] : undefined) ||
+    makeRules?.[baseKey] ||
+    []
+
+  if (!rules.length) return []
+  if (Number.isNaN(y) || y <= 0) return rules
+
+  return rules.filter((rule) => y >= rule.from && y <= rule.to)
+}
+
+function generationLabel(from: number, to: number, name: string): GenerationLabelRule {
+  return { from, to, name }
+}
+
+export const VEHICLE_GENERATION_DB: VehicleGenerationDB = {
+  acura: {
+    ilx: [
+      generationLabel(2013, 2015, '1st gen (2013–2015)'),
+      generationLabel(2016, 2018, '1st gen facelift (2016–2018)'),
+      generationLabel(2019, 2022, '1st gen 2nd facelift (2019–2022)'),
+    ],
+    tlx: [
+      generationLabel(2015, 2017, '1st gen (2015–2017)'),
+      generationLabel(2018, 2020, '1st gen facelift (2018–2020)'),
+      generationLabel(2021, 2025, '2nd gen (2021–present)'),
+    ],
+    integra: [generationLabel(2023, 2025, '5th gen DE4 (2023–present)')],
+  },
+  audi: {
+    a4: [
+      generationLabel(2017, 2020, 'B9 pre-facelift (2017–2020)'),
+      generationLabel(2021, 2025, 'B9.5 facelift (2021–2025)'),
+    ],
+    'a4 quattro': [
+      generationLabel(2017, 2020, 'B9 pre-facelift (2017–2020)'),
+      generationLabel(2021, 2025, 'B9.5 facelift (2021–2025)'),
+    ],
+    s4: [
+      generationLabel(2017, 2019, 'B9 (2017–2019)'),
+      generationLabel(2020, 2025, 'B9.5 facelift (2020–2025)'),
+    ],
+    'a4 allroad': [generationLabel(2021, 2025, 'B9.5 facelift (2021–2025)')],
+    a5: [
+      generationLabel(2013, 2017, 'B8.5 (2013–2017)'),
+      generationLabel(2018, 2019, 'B9 (2018–2019)'),
+      generationLabel(2020, 2025, 'B9.5 facelift (2020–2025)'),
+    ],
+    s5: [
+      generationLabel(2013, 2017, 'B8.5 (2013–2017)'),
+      generationLabel(2018, 2019, 'B9 (2018–2019)'),
+      generationLabel(2020, 2025, 'B9.5 facelift (2020–2025)'),
+    ],
+    's5 coupe': [
+      generationLabel(2013, 2017, 'B8.5 coupe (2013–2017)'),
+      generationLabel(2018, 2019, 'B9 coupe (2018–2019)'),
+      generationLabel(2020, 2025, 'B9.5 facelift coupe (2020–2025)'),
+    ],
+    rs5: [
+      generationLabel(2013, 2015, 'B8.5 coupe (2013–2015)'),
+      generationLabel(2018, 2019, 'B9 coupe (2018–2019)'),
+      generationLabel(2020, 2025, 'B9.5 facelift coupe (2020–2025)'),
+    ],
+    q5: [
+      generationLabel(2018, 2020, 'FY pre-facelift (2018–2020)'),
+      generationLabel(2021, 2025, 'FY facelift (2021–2025)'),
+    ],
+    sq5: [
+      generationLabel(2018, 2020, 'FY pre-facelift (2018–2020)'),
+      generationLabel(2021, 2025, 'FY facelift (2021–2025)'),
+    ],
+  },
+  bmw: {
+    '3 series': [
+      generationLabel(2012, 2015, 'F30 pre-LCI (2012–2015)'),
+      generationLabel(2016, 2018, 'F30 LCI (2016–2018)'),
+      generationLabel(2019, 2022, 'G20 pre-LCI (2019–2022)'),
+      generationLabel(2023, 2025, 'G20 LCI (2023–present)'),
+    ],
+    '4 series': [
+      generationLabel(2014, 2020, 'F32/F36 (2014–2020)'),
+      generationLabel(2021, 2024, 'G22/G26 pre-LCI (2021–2024)'),
+      generationLabel(2025, 2025, 'G22/G26 LCI (2025–present)'),
+    ],
+    '5 series': [
+      generationLabel(2017, 2020, 'G30 pre-LCI (2017–2020)'),
+      generationLabel(2021, 2023, 'G30 LCI (2021–2023)'),
+      generationLabel(2024, 2025, 'G60 (2024–present)'),
+    ],
+  },
+  cadillac: {
+    ats: [generationLabel(2013, 2019, '1st gen Alpha (2013–2019)')],
+    cts: [generationLabel(2014, 2019, '3rd gen Alpha (2014–2019)')],
+    ct4: [
+      generationLabel(2020, 2024, '1st gen pre-refresh (2020–2024)'),
+      generationLabel(2025, 2025, '1st gen refresh (2025–present)'),
+    ],
+    ct5: [
+      generationLabel(2020, 2024, '1st gen pre-refresh (2020–2024)'),
+      generationLabel(2025, 2025, '1st gen refresh (2025–present)'),
+    ],
+  },
+  chevrolet: {
+    camaro: [
+      generationLabel(2016, 2018, '6th gen pre-facelift (2016–2018)'),
+      generationLabel(2019, 2024, '6th gen facelift (2019–2024)'),
+    ],
+    malibu: [
+      generationLabel(2016, 2018, '9th gen pre-refresh (2016–2018)'),
+      generationLabel(2019, 2025, '9th gen refresh (2019–present)'),
+    ],
+  },
+  dodge: {
+    challenger: [
+      generationLabel(2008, 2014, '3rd gen pre-2015 refresh (2008–2014)'),
+      generationLabel(2015, 2023, '3rd gen refresh era (2015–2023)'),
+    ],
+    charger: [
+      generationLabel(2011, 2014, 'LD pre-2015 facelift (2011–2014)'),
+      generationLabel(2015, 2023, 'LD facelift era (2015–2023)'),
+    ],
+  },
+  ford: {
+    fusion: [generationLabel(2013, 2020, '2nd gen CD4 (2013–2020)')],
+    focus: [generationLabel(2013, 2018, '3rd gen C346 facelift (2013–2018)')],
+    mustang: [
+      generationLabel(2015, 2017, 'S550 pre-facelift (2015–2017)'),
+      generationLabel(2018, 2023, 'S550 facelift (2018–2023)'),
+      generationLabel(2024, 2025, 'S650 (2024–present)'),
+    ],
+  },
+  genesis: {
+    g70: [
+      generationLabel(2019, 2021, 'IK pre-facelift (2019–2021)'),
+      generationLabel(2022, 2025, 'IK facelift (2022–present)'),
+    ],
+    g80: [
+      generationLabel(2017, 2020, 'DH / Genesis G80 (2017–2020)'),
+      generationLabel(2021, 2024, 'RG3 (2021–2024)'),
+      generationLabel(2025, 2025, 'RG3 facelift (2025–present)'),
+    ],
+    g90: [
+      generationLabel(2017, 2019, '1st gen (2017–2019)'),
+      generationLabel(2020, 2022, '1st gen facelift (2020–2022)'),
+      generationLabel(2023, 2025, '2nd gen (2023–present)'),
+    ],
+  },
+  honda: {
+    accord: [
+      generationLabel(2018, 2022, '10th gen (2018–2022)'),
+      generationLabel(2023, 2025, '11th gen (2023–present)'),
+    ],
+    civic: [
+      generationLabel(2016, 2021, '10th gen (2016–2021)'),
+      generationLabel(2022, 2025, '11th gen (2022–present)'),
+    ],
+    'cr-v': [
+      generationLabel(2017, 2019, '5th gen pre-facelift (2017–2019)'),
+      generationLabel(2020, 2022, '5th gen facelift (2020–2022)'),
+      generationLabel(2023, 2025, '6th gen (2023–present)'),
+    ],
+    'hr-v': [
+      generationLabel(2019, 2022, '2nd gen RU facelift (2019–2022)'),
+      generationLabel(2023, 2025, '3rd gen (2023–present)'),
+    ],
+  },
+  hyundai: {
+    elantra: [
+      generationLabel(2017, 2018, 'AD pre-facelift (2017–2018)'),
+      generationLabel(2019, 2020, 'AD facelift (2019–2020)'),
+      generationLabel(2021, 2023, 'CN7 (2021–2023)'),
+      generationLabel(2024, 2025, 'CN7 refresh (2024–present)'),
+    ],
+    sonata: [
+      generationLabel(2015, 2017, 'LF (2015–2017)'),
+      generationLabel(2018, 2019, 'LF facelift (2018–2019)'),
+      generationLabel(2020, 2023, 'DN8 (2020–2023)'),
+      generationLabel(2024, 2025, 'DN8 refresh (2024–present)'),
+    ],
+    'veloster n': [generationLabel(2019, 2022, 'JS Veloster N (2019–2022)')],
+  },
+  infiniti: {
+    g37: [generationLabel(2008, 2013, 'V36 (2008–2013)')],
+    q50: [
+      generationLabel(2014, 2017, 'V37 pre-refresh (2014–2017)'),
+      generationLabel(2018, 2024, 'V37 refresh (2018–2024)'),
+    ],
+    q60: [generationLabel(2017, 2024, 'V37 coupe (2017–2024)')],
+    'red sport 400': [generationLabel(2016, 2024, 'V37 Red Sport era (2016–2024)')],
+  },
+  kia: {
+    optima: [generationLabel(2016, 2020, 'JF Optima (2016–2020)')],
+    k5: [generationLabel(2021, 2025, 'DL3 K5 (2021–present)')],
+    stinger: [
+      generationLabel(2018, 2021, 'CK pre-facelift (2018–2021)'),
+      generationLabel(2022, 2023, 'CK facelift (2022–2023)'),
+    ],
+  },
+  lexus: {
+    is: [
+      generationLabel(2014, 2016, 'XE30 pre-facelift (2014–2016)'),
+      generationLabel(2017, 2020, 'XE30 facelift (2017–2020)'),
+      generationLabel(2021, 2025, 'XE30 facelift (2021–present)'),
+    ],
+    rc: [
+      generationLabel(2015, 2018, 'XC10 pre-facelift (2015–2018)'),
+      generationLabel(2019, 2025, 'XC10 facelift (2019–present)'),
+    ],
+    gs: [generationLabel(2013, 2020, 'L10 facelift era (2013–2020)')],
+    es: [generationLabel(2019, 2025, 'XV70 (2019–present)')],
+  },
+  mazda: {
+    mazda6: [
+      generationLabel(2014, 2017, 'GJ pre-2nd facelift (2014–2017)'),
+      generationLabel(2018, 2021, 'GJ facelift (2018–2021)'),
+    ],
+    mazda3: [
+      generationLabel(2014, 2016, 'BM pre-facelift (2014–2016)'),
+      generationLabel(2017, 2018, 'BN facelift (2017–2018)'),
+      generationLabel(2019, 2025, 'BP (2019–present)'),
+    ],
+    'mazda3 hatchback': [
+      generationLabel(2014, 2016, 'BM hatchback pre-facelift (2014–2016)'),
+      generationLabel(2017, 2018, 'BN hatchback facelift (2017–2018)'),
+      generationLabel(2019, 2025, 'BP hatchback (2019–present)'),
+    ],
+  },
+  'mercedes-benz': {
+    'c 300': [
+      generationLabel(2015, 2018, 'W205 pre-facelift (2015–2018)'),
+      generationLabel(2019, 2021, 'W205 facelift (2019–2021)'),
+      generationLabel(2022, 2025, 'W206 (2022–present)'),
+    ],
+    'c 43 amg': [
+      generationLabel(2015, 2018, 'W205 pre-facelift AMG (2015–2018)'),
+      generationLabel(2019, 2021, 'W205 facelift AMG (2019–2021)'),
+      generationLabel(2022, 2025, 'W206 AMG (2022–present)'),
+    ],
+    'c 63 amg': [
+      generationLabel(2015, 2018, 'W205 pre-facelift AMG (2015–2018)'),
+      generationLabel(2019, 2021, 'W205 facelift AMG (2019–2021)'),
+      generationLabel(2022, 2025, 'W206 AMG (2022–present)'),
+    ],
+  },
+  nissan: {
+    altima: [
+      generationLabel(2013, 2015, 'L33 pre-facelift (2013–2015)'),
+      generationLabel(2016, 2018, 'L33 facelift (2016–2018)'),
+      generationLabel(2019, 2022, 'L34 (2019–2022)'),
+      generationLabel(2023, 2025, 'L34 refresh (2023–present)'),
+    ],
+    maxima: [
+      generationLabel(2016, 2018, 'A36 pre-refresh (2016–2018)'),
+      generationLabel(2019, 2023, 'A36 refresh (2019–2023)'),
+    ],
+    '370z': [generationLabel(2009, 2020, 'Z34 370Z (2009–2020)')],
+    z: [
+      generationLabel(2009, 2020, 'Z34 370Z (2009–2020)'),
+      generationLabel(2023, 2025, 'RZ34 Nissan Z (2023–present)'),
+    ],
+    'z nismo': [generationLabel(2024, 2025, 'RZ34 NISMO (2024–present)')],
+  },
+  porsche: {
+    '911': [
+      generationLabel(2012, 2016, '991.1 (2012–2016)'),
+      generationLabel(2017, 2019, '991.2 (2017–2019)'),
+      generationLabel(2020, 2025, '992 (2020–present)'),
+    ],
+    '718 boxster': [generationLabel(2017, 2025, '982 718 Boxster (2017–present)')],
+    '718 cayman': [generationLabel(2017, 2025, '982 718 Cayman (2017–present)')],
+    taycan: [
+      generationLabel(2020, 2024, 'J1 pre-refresh (2020–2024)'),
+      generationLabel(2025, 2025, 'J1 refresh (2025–present)'),
+    ],
+  },
+  subaru: {
+    wrx: [
+      generationLabel(2015, 2017, 'VA pre-facelift (2015–2017)'),
+      generationLabel(2018, 2021, 'VA facelift (2018–2021)'),
+      generationLabel(2022, 2025, 'VB (2022–present)'),
+    ],
+    'wrx sti': [generationLabel(2015, 2021, 'VA STI (2015–2021)')],
+    brz: [
+      generationLabel(2013, 2016, 'ZC6 pre-facelift (2013–2016)'),
+      generationLabel(2017, 2020, 'ZC6 facelift (2017–2020)'),
+      generationLabel(2022, 2025, 'ZD8 (2022–present)'),
+    ],
+  },
+  tesla: {
+    'model 3': [
+      generationLabel(2017, 2023, 'pre-Highland (2017–2023)'),
+      generationLabel(2024, 2025, 'Highland refresh (2024–present)'),
+    ],
+    'model y': [generationLabel(2020, 2025, '1st gen (2020–present)')],
+  },
+  toyota: {
+    camry: [
+      generationLabel(2018, 2020, 'XV70 pre-facelift (2018–2020)'),
+      generationLabel(2021, 2024, 'XV70 facelift (2021–2024)'),
+      generationLabel(2025, 2025, 'XV80 (2025–present)'),
+    ],
+    corolla: [
+      generationLabel(2019, 2022, 'E210 pre-facelift (2019–2022)'),
+      generationLabel(2023, 2025, 'E210 facelift (2023–present)'),
+    ],
+    'gr corolla': [generationLabel(2023, 2025, 'E210 GR Corolla (2023–present)')],
+    rav4: [generationLabel(2019, 2025, 'XA50 (2019–present)')],
+  },
+  volkswagen: {
+    'golf gti': [
+      generationLabel(2015, 2017, 'Mk7 GTI (2015–2017)'),
+      generationLabel(2018, 2021, 'Mk7.5 GTI (2018–2021)'),
+      generationLabel(2022, 2025, 'Mk8 GTI (2022–present)'),
+    ],
+    'golf r': [
+      generationLabel(2015, 2017, 'Mk7 Golf R (2015–2017)'),
+      generationLabel(2018, 2019, 'Mk7.5 Golf R (2018–2019)'),
+      generationLabel(2022, 2025, 'Mk8 Golf R (2022–present)'),
+    ],
+    'jetta gli': [
+      generationLabel(2019, 2021, 'A7 pre-refresh GLI (2019–2021)'),
+      generationLabel(2022, 2025, 'A7 refresh GLI (2022–present)'),
+    ],
+    arteon: [
+      generationLabel(2019, 2021, '1st gen launch era (2019–2021)'),
+      generationLabel(2022, 2025, '1st gen updated era (2022–present)'),
+    ],
+    passat: [generationLabel(2019, 2022, 'NMS facelift (2019–2022)')],
+  },
+}
+
+export function listVehicleGenerations({
+  make,
+  model,
+  year,
+}: ResolveFasciaArgs): GenerationLabelRule[] {
+  const y = typeof year === 'string' ? Number(year) : year
+  if (!make || !model) return []
+
+  const makeKey = normalizeMakeKey(make)
+  const modelKey = normalizeModelKey(model)
+  const baseKey = baseModelKey(model)
+  const makeRules = VEHICLE_GENERATION_DB[makeKey]
+  const aliasKey = modelAliasKey(make, model)
+
+  const rules =
+    makeRules?.[modelKey] ||
+    (aliasKey ? makeRules?.[aliasKey] : undefined) ||
+    makeRules?.[baseKey]
+
+  if (!rules?.length) {
+    return listFasciaGenerations({ make, model, year }).map((rule) => ({
+      from: rule.from,
+      to: rule.to,
+      name: rule.name,
+    }))
+  }
+
+  if (Number.isNaN(y) || y <= 0) return rules
+  return rules.filter((rule) => y >= rule.from && y <= rule.to)
 }
 
 /* ---------- Generation DB ---------- */
